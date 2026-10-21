@@ -97,6 +97,9 @@ a { color: inherit; }
 .anim .draw > * { stroke-dasharray: 1; stroke-dashoffset: 1; }
 .anim .lit .draw > * { animation: draw 1.6s var(--ease) calc(var(--i, 0) * 90ms) both; }
 @keyframes draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+.draw .knob { transform-box: fill-box; transform-origin: center; }
+.anim .lit .draw > .knob { animation: draw 1.6s var(--ease) calc(var(--i, 0) * 90ms) both, knob .7s var(--ease) 1.9s both; }
+@keyframes knob { 0% { transform: scale(1); fill: rgba(191,227,255,0); } 45% { transform: scale(1.35); fill: rgba(191,227,255,.35); stroke: var(--led); } 100% { transform: scale(1); fill: rgba(191,227,255,.14); stroke: var(--led); } }
 .rows { margin: 0; }
 .row { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr); gap: 32px; padding-block: 22px; }
 .row::after { content: ""; position: absolute; inset: auto 0 0; height: 1px; background: linear-gradient(90deg, transparent, var(--line) 12%, var(--line) 88%, transparent); }
@@ -185,7 +188,7 @@ body::after { content: ""; position: fixed; inset: -50%; z-index: 20; pointer-ev
         </dl>
       </section>
       <section class="group">
-        <div class="ghead"><svg class="draw" viewBox="0 0 64 64" aria-hidden="true"><rect pathLength="1" x="12" y="18" width="40" height="28" rx="4"/><path pathLength="1" style="--i:2" d="M18 18v-6M26 18v-6M38 18v-6M46 18v-6M18 46v6M26 46v6M38 46v6M46 46v6"/><path pathLength="1" style="--i:4" d="M22 38 C28 37 32 33 36 28 C39 25 42 24 44 24" stroke="var(--led)"/></svg><h3 class="chrome">Gearbox and module replacement</h3></div>
+        <div class="ghead"><svg class="draw" viewBox="0 0 64 64" aria-hidden="true"><rect pathLength="1" x="8" y="8" width="48" height="48" rx="13"/><path pathLength="1" style="--i:2" d="M20 19 V45 M32 19 V45 M44 19 V45 M20 32 H44"/><path pathLength="1" style="--i:4" d="M32 32 H44 V19" stroke="var(--led)"/><circle class="knob" pathLength="1" style="--i:6" cx="44" cy="19" r="4.5"/></svg><h3 class="chrome">Gearbox and module replacement</h3></div>
         <dl class="rows">
           <div class="row"><dt class="chrome">7G and 9G-Tronic gearboxes</dt><dd>Virgin reset and personalisation of VGS4 (7G), VGS NAG3 (9G) and DCT controllers, FBS4 cars included.</dd></div>
           <div class="row"><dt class="chrome">ISM / DSM</dt><dd>Replacement, adaptation and data transfer for the gear selector modules, using new or used units.</dd></div>
@@ -234,7 +237,7 @@ body::after { content: ""; position: fixed; inset: -50%; z-index: 20; pointer-ev
         </dl>
       </section>
       <section class="group">
-        <div class="ghead"><svg class="draw" viewBox="0 0 64 64" aria-hidden="true"><rect pathLength="1" x="12" y="18" width="40" height="28" rx="4"/><path pathLength="1" style="--i:2" d="M18 18v-6M26 18v-6M38 18v-6M46 18v-6M18 46v6M26 46v6M38 46v6M46 46v6"/><path pathLength="1" style="--i:4" d="M22 38 C28 37 32 33 36 28 C39 25 42 24 44 24" stroke="var(--led)"/></svg><h3 class="chrome">Module replacement</h3></div>
+        <div class="ghead"><svg class="draw" viewBox="0 0 64 64" aria-hidden="true"><rect pathLength="1" x="8" y="8" width="48" height="48" rx="13"/><path pathLength="1" style="--i:2" d="M20 19 V45 M32 19 V45 M44 19 V45 M20 32 H44"/><path pathLength="1" style="--i:4" d="M32 32 H44 V19" stroke="var(--led)"/><circle class="knob" pathLength="1" style="--i:6" cx="44" cy="19" r="4.5"/></svg><h3 class="chrome">Gearbox and module replacement</h3></div>
         <dl class="rows">
           <div class="row"><dt class="chrome">Engine and gearbox units</dt><dd>Replacement and adaptation of Simos 18 and DCM6.2 engine ECUs, and DQ200, DQ250, DQ381 and DQ500 DSG units.</dd></div>
           <div class="row"><dt class="chrome">Component protection</dt><dd>Replaced clusters, infotainment and comfort modules adapted to the car so they work properly.</dd></div>
@@ -272,7 +275,7 @@ body::after { content: ""; position: fixed; inset: -50%; z-index: 20; pointer-ev
         </dl>
       </section>
       <section class="group">
-        <div class="ghead"><svg class="draw" viewBox="0 0 64 64" aria-hidden="true"><rect pathLength="1" x="12" y="18" width="40" height="28" rx="4"/><path pathLength="1" style="--i:2" d="M18 18v-6M26 18v-6M38 18v-6M46 18v-6M18 46v6M26 46v6M38 46v6M46 46v6"/><path pathLength="1" style="--i:4" d="M22 38 C28 37 32 33 36 28 C39 25 42 24 44 24" stroke="var(--led)"/></svg><h3 class="chrome">Module replacement</h3></div>
+        <div class="ghead"><svg class="draw" viewBox="0 0 64 64" aria-hidden="true"><rect pathLength="1" x="8" y="8" width="48" height="48" rx="13"/><path pathLength="1" style="--i:2" d="M20 19 V45 M32 19 V45 M44 19 V45 M20 32 H44"/><path pathLength="1" style="--i:4" d="M32 32 H44 V19" stroke="var(--led)"/><circle class="knob" pathLength="1" style="--i:6" cx="44" cy="19" r="4.5"/></svg><h3 class="chrome">Gearbox and module replacement</h3></div>
         <dl class="rows">
           <div class="row"><dt class="chrome">Engine, gearbox and body</dt><dd>Replacement and adaptation of DME/DDE, FEM, BDC, ZF 8HP gearbox, FRM and lighting modules.</dd></div>
           <div class="row"><dt class="chrome">Vehicle order</dt><dd>Read, write and transfer the vehicle order (FA) and coding between modules.</dd></div>
@@ -301,7 +304,6 @@ body::after { content: ""; position: fixed; inset: -50%; z-index: 20; pointer-ev
 
   <section class="notes">
     <div class="wrap head">
-      <p class="note"><b>Mileage calibration</b> is only ever used to set a replacement cluster or module to the car's true recorded mileage. We do not reduce mileage.</p>
       <p class="note"><b>Coverage depends on model, year and module.</b> Send us the registration and we'll confirm what we can do before you book.</p>
       <div class="btns">
         <a class="btn primary" href="./#contact">Check your car</a>
