@@ -53,10 +53,10 @@ a { color: inherit; }
 .nav-links a:hover { color: var(--chrome); }
 .nav-mark { display: grid; justify-items: center; gap: 6px; text-decoration: none; }
 .nav-mark svg { width: 46px; height: 13px; overflow: visible; }
-.nav-mark span { font: 300 10px/1 var(--display); letter-spacing: .34em; text-indent: .34em; }
+.nav-mark span { font: 300 10px/1 var(--display); letter-spacing: .34em; text-indent: .34em; white-space: nowrap; }
 .nav-mark b { font-weight: 700; }
 .nav-book { justify-self: end; font: 300 11px/1 var(--display); letter-spacing: .24em; text-transform: uppercase; text-decoration: none; color: var(--led); }
-@media (max-width: 720px) { .nav-links { display: none; } .nav .wrap { grid-template-columns: 1fr auto 1fr; } }
+@media (max-width: 720px) { .nav-links { display: none; } .nav-mark { grid-column: 2; } .nav-book { grid-column: 3; } .nav .wrap { grid-template-columns: 1fr auto 1fr; } }
 
 /* ---------- hero (canvas from hero.js) ---------- */
 .hero { position: relative; }
@@ -85,7 +85,7 @@ a { color: inherit; }
 .btn:hover { border-color: var(--mist); }
 .btn.primary { border-color: var(--led); color: var(--led); box-shadow: 0 0 0 0 transparent, inset 0 0 18px rgba(191,227,255,.08); }
 .btn.primary:hover { box-shadow: 0 0 28px rgba(191,227,255,.22), inset 0 0 18px rgba(191,227,255,.12); }
-.replay.btn { min-height: 34px; padding: 0 16px; font-size: 9px; background: rgba(0,0,0,.35); }
+.replay.btn { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); top: 16px; min-height: 34px; padding: 0 16px; font-size: 9px; background: rgba(0,0,0,.35); }
 
 /* ---------- sections ---------- */
 .section { position: relative; padding-block: clamp(88px, 12vw, 148px); }
@@ -98,8 +98,9 @@ a { color: inherit; }
 
 /* line drawings share the outline's weight and draw themselves when the section arrives */
 .draw path, .draw line, .draw circle, .draw rect, .draw polyline { fill: none; stroke: var(--chrome); stroke-width: 1.25; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
-.anim .draw [pathLength] { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 1.8s var(--ease); transition-delay: calc(var(--i, 0) * 90ms); }
-.anim .lit .draw [pathLength] { stroke-dashoffset: 0; }
+.anim .draw > * { stroke-dasharray: 1; stroke-dashoffset: 1; }
+.anim .lit .draw > * { animation: draw 1.8s var(--ease) calc(var(--i, 0) * 90ms) both; }
+@keyframes draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
 .anim .rule { transform: scaleX(0); transition: transform 1.4s var(--ease) .2s; }
 .anim .lit .rule { transform: scaleX(1); }
 
@@ -143,7 +144,8 @@ a { color: inherit; }
 /* coverage: three makes, a light bar for how far each is supported */
 .makes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px; margin-top: 80px; }
 @media (max-width: 720px) { .makes { grid-template-columns: 1fr; } }
-.make { display: grid; justify-items: center; gap: 12px; text-align: center; }
+.make { display: grid; justify-items: center; gap: 12px; text-align: center; text-decoration: none; padding: 16px; border-radius: 4px; transition: background .5s; }
+.make:hover { background: radial-gradient(closest-side, rgba(120,160,205,.08), transparent); }
 .make h3 { margin: 0; font: 300 15px/1.3 var(--display); letter-spacing: .24em; text-transform: uppercase; }
 .make .bar { width: 160px; height: 1px; background: var(--line); position: relative; overflow: hidden; }
 .make .bar i { position: absolute; inset: 0 auto 0 0; width: var(--fill); background: linear-gradient(90deg, rgba(191,227,255,.2), var(--led)); box-shadow: 0 0 10px var(--led); }
@@ -217,8 +219,8 @@ body::after {
   <div class="wrap">
     <nav class="nav-links" aria-label="Sections">
       <a href="#services">Services</a>
+      <a href="makes.html">Makes</a>
       <a href="#remapping">Remapping</a>
-      <a href="#workshop">Workshop</a>
     </nav>
     <a class="nav-mark" href="#top" aria-label="M&amp;K Auto Services, home">
       <svg aria-hidden="true"><use href="#mark"/></svg>
@@ -364,9 +366,12 @@ body::after {
         <div class="rule"></div>
       </div>
       <div class="makes">
-        <div class="make on"><h3 class="chrome">Mercedes-Benz</h3><div class="bar"><i style="--fill:100%"></i></div><p>Full coverage now</p></div>
-        <div class="make"><h3 class="chrome">VW Group</h3><div class="bar"><i style="--fill:35%"></i></div><p>Coming soon</p></div>
-        <div class="make"><h3 class="chrome">BMW</h3><div class="bar"><i style="--fill:20%"></i></div><p>Coming soon</p></div>
+        <a class="make on" href="makes.html#mercedes"><h3 class="chrome">Mercedes-Benz</h3><div class="bar"><i style="--fill:100%"></i></div><p>Full coverage now</p></a>
+        <a class="make" href="makes.html#vag"><h3 class="chrome">VW Group</h3><div class="bar"><i style="--fill:35%"></i></div><p>Coming soon</p></a>
+        <a class="make" href="makes.html#bmw"><h3 class="chrome">BMW</h3><div class="bar"><i style="--fill:20%"></i></div><p>Coming soon</p></a>
+      </div>
+      <div class="btns" style="margin-top:64px">
+        <a class="btn" href="makes.html">See everything, make by make</a>
       </div>
     </div>
   </section>
