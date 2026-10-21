@@ -73,8 +73,8 @@ async function integrations(ctx: Ctx) {
       { key: "dvla", label: "DVLA vehicle lookup", connected: !!e.DVLA_API_KEY },
       { key: "dvsa", label: "DVSA MOT history", connected: !!(e.DVSA_CLIENT_ID && e.DVSA_CLIENT_SECRET && e.DVSA_API_KEY) },
       { key: "ai", label: "Claude AI", connected: !!e.ANTHROPIC_API_KEY },
-      { key: "meta", label: "Instagram and Facebook", connected: !!e.META_APP_SECRET },
-      { key: "youtube", label: "YouTube", connected: !!e.YOUTUBE_API_KEY },
+      { key: "meta", label: "Instagram and Facebook", connected: !!(e.META_APP_ID && e.META_APP_SECRET) },
+      { key: "youtube", label: "YouTube", connected: !!(e.GOOGLE_CLIENT_ID && e.GOOGLE_CLIENT_SECRET) },
       { key: "tiktok", label: "TikTok", connected: !!(e.TIKTOK_CLIENT_KEY && e.TIKTOK_CLIENT_SECRET) },
     ],
   });

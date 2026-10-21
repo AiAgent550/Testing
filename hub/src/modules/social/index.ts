@@ -20,7 +20,7 @@ import { pollAll } from "./poller";
 import { publishPost, retryQueuedPosts } from "./publish";
 import { AdapterError, type PostTargetRow, type SocialAccountRow, type SocialPostRow } from "./types";
 
-export const MAX_MEDIA_BYTES = 200 * 1024 * 1024;
+export const MAX_MEDIA_BYTES = 90 * 1024 * 1024; // Cloudflare's request body limit is 100 MB on Free/Pro plans
 export const MAX_CAPTION = 2200;
 const MEDIA_TYPES: Record<string, string> = { "video/mp4": "mp4", "image/jpeg": "jpg", "image/png": "png" };
 
@@ -135,7 +135,7 @@ function sniff(head: Uint8Array): string | null {
 async function createPost(ctx: Ctx) {
   const { env, req } = ctx;
   const len = Number(req.headers.get("content-length") || 0);
-  if (len > MAX_MEDIA_BYTES + 1024 * 1024) throw new HttpError(413, "too_large", "That file is too big. The limit is 200 MB.");
+  if (len > MAX_MEDIA_BYTES + 1024 * 1024) throw new HttpError(413, "too_large", "That file is too big. The limit is 90 MB. Export a shorter or lower-bitrate version (1080p Reels are usually well under this).");
   if (!(req.headers.get("content-type") || "").startsWith("multipart/form-data")) throw badRequest("Send the post as a form upload.");
   let form: FormData;
   try { form = await req.formData(); } catch { throw badRequest("The upload couldn't be read. Try again."); }
@@ -148,7 +148,7 @@ async function createPost(ctx: Ctx) {
   const media = form.get("media");
   if (!media || typeof media === "string") throw badRequest("Some fields need fixing.", { media: "Choose a video or photo." });
   const file = media as File;
-  if (file.size > MAX_MEDIA_BYTES) throw new HttpError(413, "too_large", "That file is too big. The limit is 200 MB.");
+  if (file.size > MAX_MEDIA_BYTES) throw new HttpError(413, "too_large", "That file is too big. The limit is 90 MB. Export a shorter or lower-bitrate version (1080p Reels are usually well under this).");
   if (!file.size) throw badRequest("Some fields need fixing.", { media: "That file is empty." });
   const type = sniff(new Uint8Array(await file.slice(0, 16).arrayBuffer()));
   if (!type || !(type in MEDIA_TYPES) || (file.type && file.type !== type)) {

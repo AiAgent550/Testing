@@ -3,7 +3,7 @@ import { api, chip, empty, field, fmtAgo, h, icon, loading, pageHead, sheet, sho
 
 const PLATFORM = { instagram: "Instagram", facebook: "Facebook", youtube: "YouTube", tiktok: "TikTok", google: "Google" };
 const CAN_PUBLISH = new Set(["instagram", "facebook"]);
-const MAX_CAPTION = 2200, MAX_MB = 200;
+const MAX_CAPTION = 2200, MAX_MB = 90;
 
 const CONNECT_ERRORS = {
   state: "That sign-in link had expired or was already used. Try connecting again.",
@@ -47,12 +47,12 @@ export async function render(view, { params }) {
     accounts = data.accounts; providers = data.providers;
     const list = accounts.length
       ? h("div.list", accounts.map(a => h("div.row",
-        h("span.title", `${PLATFORM[a.platform] || a.platform} · @${a.handle}`),
-        flex(
+        h("span.title", { style: "grid-column:1/-1" }, `${PLATFORM[a.platform] || a.platform} · @${a.handle}`),
+        h("div", { style: "grid-column:1/-1" }, flex(
           a.demo ? chip("draft", "Demo") : null,
           a.status === "active" ? chip("confirmed", "Connected") : chip("failed", "Reconnect needed"),
           h("button.btn.small.ghost", { type: "button", onclick: () => disconnect(a) }, "Disconnect"),
-        ),
+        )),
         h("span.sub", a.last_polled_at ? `Comments checked ${fmtAgo(a.last_polled_at)}` : "Not checked yet"),
       )))
       : h("p.muted", { style: "margin:0" }, "No accounts connected yet.");
@@ -130,12 +130,12 @@ export async function render(view, { params }) {
   function composer() {
     const usable = accounts.filter(a => a.status === "active");
     const file = h("input.input", { type: "file", name: "media", accept: "video/mp4,image/jpeg,image/png" });
-    const fileInfo = h("small", "MP4 video, or a JPEG or PNG photo (Instagram takes JPEG only). Up to 200 MB.");
+    const fileInfo = h("small", "MP4 video, or a JPEG or PNG photo (Instagram takes JPEG only). Up to 90 MB.");
     file.addEventListener("change", () => {
       const f = file.files?.[0];
       if (!f) return;
       fileInfo.textContent = `${f.name} · ${(f.size / 1048576).toFixed(1)} MB`;
-      if (f.size > MAX_MB * 1048576) toast("That file is over 200 MB.", "bad");
+      if (f.size > MAX_MB * 1048576) toast("That file is over 90 MB.", "bad");
     });
     const counter = h("small", `0 / ${MAX_CAPTION}`);
     const caption = h("textarea.input", { name: "caption", rows: 5, maxlength: MAX_CAPTION });

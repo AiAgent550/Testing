@@ -31,7 +31,7 @@ export async function render(view, { params, navigate, refreshCounts }) {
 const titleCase = s => (s ? String(s).toLowerCase().replace(/(^|[\s-])([a-z])/g, (_, a, b) => a + b.toUpperCase()) : "");
 function carLine(v, withFuel = false) {
   if (!v) return "";
-  const parts = [v.year, titleCase(v.make), v.model ? String(v.model).toUpperCase() === v.model ? titleCase(v.model) : v.model : null].filter(Boolean);
+  const parts = [v.year, v.make, v.model].filter(Boolean); // the Hub stores names already tidied ("Mercedes-Benz", "AMG GT")
   if (withFuel && v.fuel_type) parts.push(`· ${titleCase(v.fuel_type)}`);
   return parts.join(" ");
 }

@@ -1,6 +1,16 @@
 // Shared UI toolkit for every page. Pages import from here and nothing else,
 // so the whole dashboard looks and behaves the same.
 
+// Pages compose views from optional parts (`cond ? node : null`, arrays of rows). Native
+// append/prepend/replaceChildren would print null as the text "null" and arrays as
+// "[object ...]", so skip empty parts and flatten arrays everywhere in the dashboard.
+for (const name of ["append", "prepend", "replaceChildren"]) {
+  const native = Element.prototype[name];
+  Element.prototype[name] = function (...parts) {
+    return native.apply(this, parts.flat(Infinity).filter(p => p !== null && p !== undefined && p !== false));
+  };
+}
+
 // ---------- API ----------
 export class ApiError extends Error {
   constructor(status, body) {
