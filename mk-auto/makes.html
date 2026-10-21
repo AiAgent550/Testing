@@ -95,10 +95,12 @@ a { color: inherit; }
 .ghead h3 { margin: 0; font: 300 14px/1.4 var(--display); letter-spacing: .22em; text-transform: uppercase; }
 .draw path, .draw circle, .draw rect { fill: none; stroke: var(--chrome); stroke-width: 1.25; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 .anim .draw > * { stroke-dasharray: 1; stroke-dashoffset: 1; }
-.anim .lit .draw > * { animation: draw 1.6s var(--ease) calc(var(--i, 0) * 90ms) both; }
+.anim .draw.lit > * { animation: draw 1.6s var(--ease) calc(var(--i, 0) * 90ms) both; }
+.anim .draw.done > * { animation: none; stroke-dashoffset: 0; } /* drawn once, never replayed */
 @keyframes draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
 .draw .knob { transform-box: fill-box; transform-origin: center; }
-.anim .lit .draw > .knob { animation: draw 1.6s var(--ease) calc(var(--i, 0) * 90ms) both, knob .7s var(--ease) 1.9s both; }
+.anim .draw.lit > .knob { animation: draw 1.6s var(--ease) calc(var(--i, 0) * 90ms) both, knob .7s var(--ease) 1.9s both; }
+.anim .draw.done > .knob, html:not(.anim) .draw > .knob { animation: none; fill: rgba(191,227,255,.14); stroke: var(--led); }
 @keyframes knob { 0% { transform: scale(1); fill: rgba(191,227,255,0); } 45% { transform: scale(1.35); fill: rgba(191,227,255,.35); stroke: var(--led); } 100% { transform: scale(1); fill: rgba(191,227,255,.14); stroke: var(--led); } }
 .rows { margin: 0; }
 .row { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr); gap: 32px; padding-block: 22px; }
@@ -327,7 +329,13 @@ body::after { content: ""; position: fixed; inset: -50%; z-index: 20; pointer-ev
   const glide = document.querySelector(".glide");
   const anim = "IntersectionObserver" in window && !matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (anim) document.documentElement.classList.add("anim");
-  const io = anim && new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("lit"); io.unobserve(e.target); } }), { threshold: .3 });
+  // Each icon draws when it is actually on screen, then locks so tab switches never replay it.
+  const io = anim && new IntersectionObserver(es => es.forEach(e => {
+    if (!e.isIntersecting) return;
+    const el = e.target;
+    el.classList.add("lit"); io.unobserve(el);
+    setTimeout(() => el.classList.add("done"), 3000);
+  }), { threshold: .5, rootMargin: "0px 0px -8% 0px" });
 
   const moveGlide = tab => { glide.style.width = tab.offsetWidth + "px"; glide.style.transform = `translateX(${tab.offsetLeft}px)`; };
   function select(tab, opts = {}) {
@@ -337,7 +345,7 @@ body::after { content: ""; position: fixed; inset: -50%; z-index: 20; pointer-ev
       panel.hidden = !on;
       if (on) {
         panel.classList.remove("enter"); void panel.offsetWidth; panel.classList.add("enter");
-        if (io) panel.querySelectorAll(".group:not(.lit)").forEach(g => io.observe(g));
+        if (io) panel.querySelectorAll(".draw:not(.lit)").forEach(d => io.observe(d));
       }
     });
     moveGlide(tab);

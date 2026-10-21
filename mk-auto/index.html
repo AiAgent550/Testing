@@ -99,7 +99,8 @@ a { color: inherit; }
 /* line drawings share the outline's weight and draw themselves when the section arrives */
 .draw path, .draw line, .draw circle, .draw rect, .draw polyline { fill: none; stroke: var(--chrome); stroke-width: 1.25; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 .anim .draw > * { stroke-dasharray: 1; stroke-dashoffset: 1; }
-.anim .lit .draw > * { animation: draw 1.8s var(--ease) calc(var(--i, 0) * 90ms) both; }
+.anim .draw.lit > * { animation: draw 1.8s var(--ease) calc(var(--i, 0) * 90ms) both; }
+.anim .draw.done > * { animation: none; stroke-dashoffset: 0; } /* drawn once, never replayed */
 @keyframes draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
 .anim .rule { transform: scaleX(0); transition: transform 1.4s var(--ease) .2s; }
 .anim .lit .rule { transform: scaleX(1); }
@@ -163,7 +164,7 @@ a { color: inherit; }
 .track { position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 88px; }
 .track::before { content: ""; position: absolute; top: 0; left: 12.5%; right: 12.5%; height: 1px; background: linear-gradient(90deg, transparent, rgba(191,227,255,.5) 15%, rgba(191,227,255,.5) 85%, transparent); }
 .anim .track::before { transform: scaleX(0); transform-origin: left; transition: transform 2s var(--ease) .2s; }
-.anim .lit .track::before { transform: scaleX(1); }
+.anim .track.lit::before { transform: scaleX(1); }
 .station { position: relative; display: grid; justify-items: center; gap: 10px; padding: 36px 16px 0; text-align: center; }
 .station::before { content: ""; position: absolute; top: -8px; left: 50%; width: 1px; height: 17px; background: var(--led); box-shadow: 0 0 8px var(--led); }
 .station em { font: 200 13px/1 var(--display); font-style: normal; letter-spacing: .2em; color: var(--steel); }
@@ -173,7 +174,7 @@ a { color: inherit; }
   .track { grid-template-columns: 1fr; gap: 44px; padding-left: 28px; }
   .track::before { left: 0; right: auto; top: 0; bottom: 0; width: 1px; height: auto; background: linear-gradient(180deg, transparent, rgba(191,227,255,.5) 10%, rgba(191,227,255,.5) 90%, transparent); }
   .anim .track::before { transform: scaleY(0); transform-origin: top; }
-  .anim .lit .track::before { transform: scaleY(1); }
+  .anim .track.lit::before { transform: scaleY(1); }
   .station { justify-items: start; text-align: left; padding: 0; }
   .station::before { top: 6px; left: -36px; width: 17px; height: 1px; }
 }
@@ -470,8 +471,14 @@ body::after {
   // Sections light up as they arrive. Text is always visible; only lines draw in.
   if (!("IntersectionObserver" in window) || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   document.documentElement.classList.add("anim");
-  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("lit"); io.unobserve(e.target); } }), { threshold: .2 });
-  document.querySelectorAll(".section").forEach(s => io.observe(s));
+  // Each piece animates when it is actually on screen, then locks so it never replays.
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (!e.isIntersecting) return;
+    const el = e.target;
+    el.classList.add("lit"); io.unobserve(el);
+    if (el.classList.contains("draw")) setTimeout(() => el.classList.add("done"), 3000);
+  }), { threshold: .5, rootMargin: "0px 0px -8% 0px" });
+  document.querySelectorAll(".head, .draw, .dyno, .track").forEach(el => io.observe(el));
 })();
 </script>
 </body>
