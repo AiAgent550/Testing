@@ -100,6 +100,11 @@ a { color: inherit; }
 .draw .knob { transform-box: fill-box; transform-origin: center; }
 .anim .lit .draw > .knob { animation: draw 1.6s var(--ease) calc(var(--i, 0) * 90ms) both, knob .7s var(--ease) 1.9s both; }
 @keyframes knob { 0% { transform: scale(1); fill: rgba(191,227,255,0); } 45% { transform: scale(1.35); fill: rgba(191,227,255,.35); stroke: var(--led); } 100% { transform: scale(1); fill: rgba(191,227,255,.14); stroke: var(--led); } }
+/* detailed illustrations above a group's rows */
+.illus { position: relative; max-width: 980px; margin: 8px auto 40px; aspect-ratio: 16 / 9; }
+@media (max-width: 640px) { .illus { aspect-ratio: 4 / 3; margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); } }
+.illus canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: pan-y; }
+.illus-btn { position: absolute; left: 0; bottom: 0; min-height: 34px; padding: 0 16px; font-size: 9px; background: rgba(5,6,8,.6); }
 .rows { margin: 0; }
 .row { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr); gap: 32px; padding-block: 22px; }
 .row::after { content: ""; position: absolute; inset: auto 0 0; height: 1px; background: linear-gradient(90deg, transparent, var(--line) 12%, var(--line) 88%, transparent); }
@@ -189,6 +194,10 @@ body::after { content: ""; position: fixed; inset: -50%; z-index: 20; pointer-ev
       </section>
       <section class="group">
         <div class="ghead"><svg class="draw" viewBox="0 0 64 64" aria-hidden="true"><rect pathLength="1" x="8" y="8" width="48" height="48" rx="13"/><path pathLength="1" style="--i:2" d="M20 19 V45 M32 19 V45 M44 19 V45 M20 32 H44"/><path pathLength="1" style="--i:4" d="M32 32 H44 V19" stroke="var(--led)"/><circle class="knob" pathLength="1" style="--i:6" cx="44" cy="19" r="4.5"/></svg><h3 class="chrome">Gearbox and module replacement</h3></div>
+        <figure class="illus">
+          <canvas class="gearbox" role="img" aria-label="A five-speed manual gearbox: input shaft, countershaft and output shaft with gear sets, synchronisers, shift forks and bearings, assembling from an exploded view."></canvas>
+          <button class="btn illus-btn" type="button" data-explode>Exploded view</button>
+        </figure>
         <dl class="rows">
           <div class="row"><dt class="chrome">7G and 9G-Tronic gearboxes</dt><dd>Virgin reset and personalisation of VGS4 (7G), VGS NAG3 (9G) and DCT controllers, FBS4 cars included.</dd></div>
           <div class="row"><dt class="chrome">ISM / DSM</dt><dd>Replacement, adaptation and data transfer for the gear selector modules, using new or used units.</dd></div>
@@ -238,6 +247,10 @@ body::after { content: ""; position: fixed; inset: -50%; z-index: 20; pointer-ev
       </section>
       <section class="group">
         <div class="ghead"><svg class="draw" viewBox="0 0 64 64" aria-hidden="true"><rect pathLength="1" x="8" y="8" width="48" height="48" rx="13"/><path pathLength="1" style="--i:2" d="M20 19 V45 M32 19 V45 M44 19 V45 M20 32 H44"/><path pathLength="1" style="--i:4" d="M32 32 H44 V19" stroke="var(--led)"/><circle class="knob" pathLength="1" style="--i:6" cx="44" cy="19" r="4.5"/></svg><h3 class="chrome">Gearbox and module replacement</h3></div>
+        <figure class="illus">
+          <canvas class="gearbox" role="img" aria-label="A five-speed manual gearbox: input shaft, countershaft and output shaft with gear sets, synchronisers, shift forks and bearings, assembling from an exploded view."></canvas>
+          <button class="btn illus-btn" type="button" data-explode>Exploded view</button>
+        </figure>
         <dl class="rows">
           <div class="row"><dt class="chrome">Engine and gearbox units</dt><dd>Replacement and adaptation of Simos 18 and DCM6.2 engine ECUs, and DQ200, DQ250, DQ381 and DQ500 DSG units.</dd></div>
           <div class="row"><dt class="chrome">Component protection</dt><dd>Replaced clusters, infotainment and comfort modules adapted to the car so they work properly.</dd></div>
@@ -276,6 +289,10 @@ body::after { content: ""; position: fixed; inset: -50%; z-index: 20; pointer-ev
       </section>
       <section class="group">
         <div class="ghead"><svg class="draw" viewBox="0 0 64 64" aria-hidden="true"><rect pathLength="1" x="8" y="8" width="48" height="48" rx="13"/><path pathLength="1" style="--i:2" d="M20 19 V45 M32 19 V45 M44 19 V45 M20 32 H44"/><path pathLength="1" style="--i:4" d="M32 32 H44 V19" stroke="var(--led)"/><circle class="knob" pathLength="1" style="--i:6" cx="44" cy="19" r="4.5"/></svg><h3 class="chrome">Gearbox and module replacement</h3></div>
+        <figure class="illus">
+          <canvas class="gearbox" role="img" aria-label="A five-speed manual gearbox: input shaft, countershaft and output shaft with gear sets, synchronisers, shift forks and bearings, assembling from an exploded view."></canvas>
+          <button class="btn illus-btn" type="button" data-explode>Exploded view</button>
+        </figure>
         <dl class="rows">
           <div class="row"><dt class="chrome">Engine, gearbox and body</dt><dd>Replacement and adaptation of DME/DDE, FEM, BDC, ZF 8HP gearbox, FRM and lighting modules.</dd></div>
           <div class="row"><dt class="chrome">Vehicle order</dt><dd>Read, write and transfer the vehicle order (FA) and coding between modules.</dd></div>
@@ -321,6 +338,7 @@ body::after { content: ""; position: fixed; inset: -50%; z-index: 20; pointer-ev
   </div>
 </footer>
 
+<script src="gearbox.js"></script>
 <script>
 (() => {
   const tabs = [...document.querySelectorAll('[role="tab"]')];
