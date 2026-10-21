@@ -2,7 +2,7 @@
 import type { BookingStatus } from "../../lib/types";
 
 export const TRANSITIONS: Readonly<Record<BookingStatus, readonly BookingStatus[]>> = {
-  requested: ["confirmed", "cancelled"],
+  requested: ["confirmed", "in_progress", "cancelled"], // in_progress: car arrived and a job card was opened straight away
   confirmed: ["in_progress", "cancelled", "no_show", "requested"],
   in_progress: ["completed", "confirmed"],
   completed: [],

@@ -4,7 +4,7 @@ import { TRANSITIONS, canTransition, ukToday } from "../src/modules/bookings/sta
 
 describe("booking status transitions", () => {
   const allowed: [BookingStatus, BookingStatus][] = [
-    ["requested", "confirmed"], ["requested", "cancelled"],
+    ["requested", "confirmed"], ["requested", "in_progress"], ["requested", "cancelled"],
     ["confirmed", "in_progress"], ["confirmed", "cancelled"], ["confirmed", "no_show"], ["confirmed", "requested"],
     ["in_progress", "completed"], ["in_progress", "confirmed"],
     ["cancelled", "requested"],
@@ -27,7 +27,6 @@ describe("booking status transitions", () => {
     expect(TRANSITIONS.completed).toEqual([]);
     expect(TRANSITIONS.no_show).toEqual([]);
     expect(TRANSITIONS.cancelled).toEqual(["requested"]);
-    expect(canTransition("requested", "in_progress")).toBe(false);
     expect(canTransition("requested", "completed")).toBe(false);
   });
 
