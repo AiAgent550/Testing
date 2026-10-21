@@ -8,166 +8,223 @@
 <meta name="description" content="M&amp;K Auto Services: ECU remapping, key programming, Mercedes coding and general repairs.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;500;700&family=Manrope:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200;300;700&family=Manrope:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
 <style>
-/* Layout: one cinematic stage (car front + dyno-curve mark), then a quiet spec-sheet below it. Single dark look. */
+/* Layout: everything hangs off one centre axis, like the car and the wordmark in the hero.
+   Sections are separated by light, not boxes; line drawings share the hero outline's weight. */
 :root {
   --night: #050608;        /* page */
-  --panel: #0c0e12;        /* raised surfaces */
-  --line: #1c2028;         /* hairlines */
-  --steel: #6f7a88;        /* drawn outline, muted text */
+  --line: #1a1f27;         /* hairlines */
+  --steel: #7a8593;        /* secondary text, stock curve */
+  --mist: #a9b3bf;         /* body text */
   --chrome: #e9eef4;       /* primary text */
   --led: #bfe3ff;          /* headlight ice: the one accent */
   --display: "Unbounded", "Arial Black", system-ui, sans-serif;
   --body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --mono: "JetBrains Mono", ui-monospace, monospace; /* hero canvas only */
+  --chrome-fill: linear-gradient(180deg, #ffffff 0%, #d3dae1 46%, #7f8a96 54%, #e7ecf1 68%, #a3adb8 100%);
+  --ease: cubic-bezier(.65, 0, .2, 1);
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
 html, body { background: var(--night); }
 html { scroll-behavior: smooth; }
-body {
-  margin: 0; color: var(--chrome); font: 400 16px/1.6 var(--body);
-  -webkit-font-smoothing: antialiased; overflow-x: hidden;
-}
+body { margin: 0; color: var(--chrome); font: 400 16px/1.65 var(--body); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--night); }
 a { color: inherit; }
-:focus-visible { outline: 2px solid var(--led); outline-offset: 3px; }
+:focus-visible { outline: 1px solid var(--led); outline-offset: 4px; }
 
-.wrap {
-  max-width: 1180px; margin: 0 auto;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
-}
+.wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 
-/* ---------- nav ---------- */
-.nav {
-  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
-  background: color-mix(in srgb, var(--night) 82%, transparent);
-  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--line);
-}
-.nav .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 14px; }
-.nav-mark { display: flex; align-items: center; gap: 10px; text-decoration: none; font: 500 13px/1 var(--display); letter-spacing: .08em; }
-.nav-mark svg { width: 40px; height: 14px; }
-.nav-links { display: flex; gap: 22px; font: 500 12px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--steel); }
-.nav-links a { text-decoration: none; transition: color .2s; }
+/* ---------- type ---------- */
+.chrome { background: var(--chrome-fill); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.title { margin: 0; font: 200 clamp(22px, 3.2vw, 36px)/1.25 var(--display); letter-spacing: .16em; text-transform: uppercase; text-wrap: balance; }
+.title b { font-weight: 700; }
+.kicker { margin: 0; font: 300 11px/1 var(--display); letter-spacing: .38em; text-transform: uppercase; color: var(--steel); }
+.lede { margin: 0; max-width: 54ch; color: var(--mist); text-wrap: pretty; }
+.small { font-size: 14px; color: var(--steel); }
+
+/* ---------- nav: mark on the centre axis ---------- */
+.nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: color-mix(in srgb, var(--night) 78%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.nav::after { content: ""; position: absolute; inset: auto 0 0; height: 1px; background: linear-gradient(90deg, transparent, var(--line) 20%, var(--line) 80%, transparent); }
+.nav .wrap { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; padding-block: 16px; }
+.nav-links { display: flex; gap: 28px; font: 300 11px/1 var(--display); letter-spacing: .24em; text-transform: uppercase; color: var(--steel); }
+.nav-links a { text-decoration: none; transition: color .3s; }
 .nav-links a:hover { color: var(--chrome); }
-@media (max-width: 640px) { .nav-links a:not(.cta-link) { display: none; } }
-.cta-link { color: var(--led); }
+.nav-mark { display: grid; justify-items: center; gap: 6px; text-decoration: none; }
+.nav-mark svg { width: 46px; height: 13px; overflow: visible; }
+.nav-mark span { font: 300 10px/1 var(--display); letter-spacing: .34em; text-indent: .34em; }
+.nav-mark b { font-weight: 700; }
+.nav-book { justify-self: end; font: 300 11px/1 var(--display); letter-spacing: .24em; text-transform: uppercase; text-decoration: none; color: var(--led); }
+@media (max-width: 720px) { .nav-links { display: none; } .nav .wrap { grid-template-columns: 1fr auto 1fr; } }
 
-/* ---------- hero ---------- */
-.hero { position: relative; background: #000; }
+/* ---------- hero (canvas from hero.js) ---------- */
+.hero { position: relative; }
+.stage { background: #000; }
 .stage { position: relative; height: clamp(600px, 100svh, 1100px); }
 @media (max-aspect-ratio: 4/5) { .stage { height: clamp(460px, 132vw, 86svh); } }
 #scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.hero h1.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.hero-copy { position: relative; z-index: 2; display: grid; justify-items: center; gap: 18px; margin-top: -40px; padding-block: 0 72px; text-align: center; }
-.hero-copy .lead { margin: 0; max-width: 22ch; font: 500 clamp(24px, 4vw, 46px)/1.1 var(--display); letter-spacing: -.01em; text-wrap: balance;
-  background: linear-gradient(180deg, #ffffff 0%, #c9d1d9 48%, #7c8794 52%, #e6ebf0 70%, #9aa5b1 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.hero-copy p { margin: 0; max-width: 56ch; color: var(--steel); text-wrap: pretty; }
-.btns { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
-.btn {
-  position: relative; overflow: hidden;
-  display: inline-flex; align-items: center; gap: 10px; padding: 14px 22px; border-radius: 2px;
-  font: 500 12px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; text-decoration: none;
-  border: 1px solid var(--line); background: transparent; color: var(--chrome); cursor: pointer;
-  transition: border-color .25s, background .25s, color .25s, box-shadow .25s;
-}
-.btn::after { content: ""; position: absolute; inset: 0; transform: translateX(-120%); background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,.35) 50%, transparent 70%); transition: transform .7s ease; }
-.btn:hover::after { transform: translateX(120%); }
-.btn:hover { border-color: var(--steel); }
-.btn.primary { background: var(--chrome); color: var(--night); border-color: var(--chrome); }
-.btn.primary:hover { background: var(--led); border-color: var(--led); box-shadow: 0 0 32px color-mix(in srgb, var(--led) 45%, transparent); }
-.replay { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); top: 16px; z-index: 3; padding: 8px 12px; font-size: 10px; background: rgba(0,0,0,.4); }
-
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.replay { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); top: 16px; z-index: 3; }
 .capture .stage { position: fixed; inset: 0; height: auto; z-index: 100; }
 .capture .replay, .capture body::after { display: none; }
 
-/* site-wide grade: film grain and a cold key light on each section */
+.hero-copy { position: relative; z-index: 2; display: grid; justify-items: center; gap: 22px; margin-top: -32px; padding-block: 0 112px; text-align: center; }
+.hero-copy .title { max-width: 24ch; }
+
+/* ---------- buttons: hairline pills with a light sweep ---------- */
+.btns { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; }
+.btn {
+  position: relative; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 28px;
+  border: 1px solid #2a313b; border-radius: 999px; background: transparent; color: var(--chrome); cursor: pointer;
+  font: 300 11px/1 var(--display); letter-spacing: .26em; text-transform: uppercase; text-decoration: none;
+  transition: border-color .4s, color .4s, box-shadow .4s;
+}
+.btn::after { content: ""; position: absolute; inset: 0; transform: translateX(-120%); background: linear-gradient(100deg, transparent 35%, rgba(255,255,255,.28) 50%, transparent 65%); transition: transform .9s var(--ease); }
+.btn:hover::after { transform: translateX(120%); }
+.btn:hover { border-color: var(--mist); }
+.btn.primary { border-color: var(--led); color: var(--led); box-shadow: 0 0 0 0 transparent, inset 0 0 18px rgba(191,227,255,.08); }
+.btn.primary:hover { box-shadow: 0 0 28px rgba(191,227,255,.22), inset 0 0 18px rgba(191,227,255,.12); }
+.replay.btn { min-height: 34px; padding: 0 16px; font-size: 9px; background: rgba(0,0,0,.35); }
+
+/* ---------- sections ---------- */
+.section { position: relative; padding-block: clamp(88px, 12vw, 148px); }
+.section::before { /* cold key light falling on each section from above */
+  content: ""; position: absolute; left: 0; right: 0; top: -160px; height: 760px; pointer-events: none;
+  background: radial-gradient(42% 46% at 50% 42%, rgba(70,96,128,.12), transparent 100%);
+}
+.head { position: relative; display: grid; justify-items: center; gap: 18px; text-align: center; }
+.rule { width: min(420px, 70%); height: 1px; background: linear-gradient(90deg, transparent, rgba(191,227,255,.6), transparent); transform-origin: center; }
+
+/* line drawings share the outline's weight and draw themselves when the section arrives */
+.draw path, .draw line, .draw circle, .draw rect, .draw polyline { fill: none; stroke: var(--chrome); stroke-width: 1.25; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.anim .draw [pathLength] { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 1.8s var(--ease); transition-delay: calc(var(--i, 0) * 90ms); }
+.anim .lit .draw [pathLength] { stroke-dashoffset: 0; }
+.anim .rule { transform: scaleX(0); transition: transform 1.4s var(--ease) .2s; }
+.anim .lit .rule { transform: scaleX(1); }
+
+/* services: six on the axis, no boxes */
+.services { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 72px 48px; margin-top: 88px; }
+@media (max-width: 900px) { .services { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .services { grid-template-columns: 1fr; gap: 56px; } }
+.svc { position: relative; display: grid; justify-items: center; align-content: start; gap: 14px; text-align: center; min-width: 0; }
+.svc::before { /* soft halo behind the drawing */
+  content: ""; position: absolute; top: -18px; left: 50%; width: 150px; height: 120px; transform: translateX(-50%); pointer-events: none;
+  background: radial-gradient(closest-side, rgba(120,160,205,.12), transparent); opacity: .7; transition: opacity .5s;
+}
+.svc:hover::before { opacity: 1.6; }
+.svc svg { width: 84px; height: 84px; overflow: visible; }
+.svc h3 { margin: 6px 0 0; font: 300 14px/1.4 var(--display); letter-spacing: .2em; text-transform: uppercase; }
+.svc p { margin: 0; max-width: 32ch; color: var(--mist); font-size: 15px; }
+.svc .tags { margin: 2px 0 0; color: var(--steel); font-size: 13px; letter-spacing: .04em; }
+
+/* dyno: the logo's curve, shown at full size */
+.dyno { margin-top: 72px; display: grid; justify-items: center; gap: 48px; }
+.chart { width: 100%; max-width: 920px; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart text { font-family: var(--body); font-size: 12px; fill: var(--steel); }
+.chart .grid line { stroke: #161b22; stroke-width: 1; }
+.chart .axis { stroke: #2a313b; stroke-width: 1; }
+.chart .stock { fill: none; stroke: var(--steel); stroke-width: 1.5; }
+.chart .tuned { fill: none; stroke: url(#tunedGrad); stroke-width: 3.2; stroke-linecap: round; filter: drop-shadow(0 0 6px rgba(191,227,255,.35)); }
+.chart .area { fill: url(#areaGrad); opacity: 0; transition: opacity 1.4s ease 1.6s; }
+.chart .lbl { font: 300 11px var(--display); letter-spacing: .18em; }
+.anim .chart .stock, .anim .chart .tuned { stroke-dasharray: 1; stroke-dashoffset: 1; }
+.anim .lit .chart .stock { stroke-dashoffset: 0; transition: stroke-dashoffset 2s var(--ease) .2s; }
+.anim .lit .chart .tuned { stroke-dashoffset: 0; transition: stroke-dashoffset 2.4s var(--ease) .9s; }
+.lit .chart .area, html:not(.anim) .chart .area { opacity: 1; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; max-width: 820px; }
+.stat { display: grid; justify-items: center; gap: 8px; padding: 6px 12px; text-align: center; }
+.stat + .stat { border-left: 1px solid var(--line); }
+.stat strong { font: 200 clamp(30px, 4.6vw, 48px)/1 var(--display); letter-spacing: .02em; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 13px; color: var(--steel); }
+@media (max-width: 560px) { .stats { grid-template-columns: 1fr; gap: 28px; } .stat + .stat { border-left: 0; } }
+
+/* coverage: three makes, a light bar for how far each is supported */
+.makes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px; margin-top: 80px; }
+@media (max-width: 720px) { .makes { grid-template-columns: 1fr; } }
+.make { display: grid; justify-items: center; gap: 12px; text-align: center; }
+.make h3 { margin: 0; font: 300 15px/1.3 var(--display); letter-spacing: .24em; text-transform: uppercase; }
+.make .bar { width: 160px; height: 1px; background: var(--line); position: relative; overflow: hidden; }
+.make .bar i { position: absolute; inset: 0 auto 0 0; width: var(--fill); background: linear-gradient(90deg, rgba(191,227,255,.2), var(--led)); box-shadow: 0 0 10px var(--led); }
+.make p { margin: 0; font-size: 14px; color: var(--steel); }
+.make.on p { color: var(--led); }
+
+/* equipment: a quiet roll call */
+.kit { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 48px 32px; margin-top: 80px; }
+@media (max-width: 720px) { .kit { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.tool { display: grid; justify-items: center; align-content: start; gap: 8px; text-align: center; min-width: 0; }
+.tool strong { font: 300 15px/1.3 var(--display); letter-spacing: .12em; }
+.tool span { font-size: 14px; color: var(--steel); max-width: 26ch; }
+
+/* process: one line of light with four stations */
+.track { position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 88px; }
+.track::before { content: ""; position: absolute; top: 0; left: 12.5%; right: 12.5%; height: 1px; background: linear-gradient(90deg, transparent, rgba(191,227,255,.5) 15%, rgba(191,227,255,.5) 85%, transparent); }
+.anim .track::before { transform: scaleX(0); transform-origin: left; transition: transform 2s var(--ease) .2s; }
+.anim .lit .track::before { transform: scaleX(1); }
+.station { position: relative; display: grid; justify-items: center; gap: 10px; padding: 36px 16px 0; text-align: center; }
+.station::before { content: ""; position: absolute; top: -8px; left: 50%; width: 1px; height: 17px; background: var(--led); box-shadow: 0 0 8px var(--led); }
+.station em { font: 200 13px/1 var(--display); font-style: normal; letter-spacing: .2em; color: var(--steel); }
+.station h3 { margin: 0; font: 300 14px/1.4 var(--display); letter-spacing: .18em; text-transform: uppercase; }
+.station p { margin: 0; max-width: 24ch; font-size: 15px; color: var(--mist); }
+@media (max-width: 760px) {
+  .track { grid-template-columns: 1fr; gap: 44px; padding-left: 28px; }
+  .track::before { left: 0; right: auto; top: 0; bottom: 0; width: 1px; height: auto; background: linear-gradient(180deg, transparent, rgba(191,227,255,.5) 10%, rgba(191,227,255,.5) 90%, transparent); }
+  .anim .track::before { transform: scaleY(0); transform-origin: top; }
+  .anim .lit .track::before { transform: scaleY(1); }
+  .station { justify-items: start; text-align: left; padding: 0; }
+  .station::before { top: 6px; left: -36px; width: 17px; height: 1px; }
+}
+
+/* contact */
+.contact { display: grid; justify-items: center; gap: 28px; margin-top: 64px; text-align: center; }
+.phone { margin: 0; font: 200 clamp(30px, 6vw, 64px)/1 var(--display); letter-spacing: .08em; user-select: all; }
+.details { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 40px; color: var(--mist); font-size: 15px; }
+.details span { color: var(--steel); margin-right: 10px; font: 300 10px/1 var(--display); letter-spacing: .28em; text-transform: uppercase; }
+
+footer { position: relative; padding-block: 56px 64px; }
+footer::before { content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg, transparent, var(--line) 20%, var(--line) 80%, transparent); }
+footer .wrap { display: grid; justify-items: center; gap: 14px; text-align: center; }
+footer svg { width: 120px; height: 34px; overflow: visible; }
+footer p { margin: 0; font: 300 10px/1.8 var(--display); letter-spacing: .3em; text-transform: uppercase; color: var(--steel); }
+
+/* film grain over the whole site, same as the hero */
 body::after {
-  content: ""; position: fixed; inset: -50%; z-index: 20; pointer-events: none; opacity: .07;
+  content: ""; position: fixed; inset: -50%; z-index: 20; pointer-events: none; opacity: .06;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   animation: grain 1s steps(6) infinite;
 }
 @keyframes grain { 0% { transform: translate(0,0) } 20% { transform: translate(-3%,2%) } 40% { transform: translate(2%,-3%) } 60% { transform: translate(-2%,-1%) } 80% { transform: translate(3%,3%) } 100% { transform: translate(0,0) } }
-section.block { position: relative; }
-section.block::before { content: ""; position: absolute; inset: 0 0 auto; height: 420px; pointer-events: none;
-  background: radial-gradient(60% 100% at 50% 0%, rgba(60,84,112,.16), transparent 70%); }
-section.block::after { /* light that travels along the divider when the section scrolls in */
-  content: ""; position: absolute; top: -1px; left: 0; width: 30%; height: 1px; pointer-events: none; opacity: 0;
-  background: linear-gradient(90deg, transparent, var(--led), transparent); }
-section.block.lit::after { animation: rail 1.8s cubic-bezier(.6,0,.2,1) forwards; }
-@keyframes rail { 0% { opacity: 0; transform: translateX(-30%) } 15% { opacity: 1 } 100% { opacity: 0; transform: translateX(330%) } }
-h2 { background: linear-gradient(180deg, #ffffff 0%, #d5dce3 50%, #8e99a5 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
-
-/* ---------- sections ---------- */
-section.block { border-top: 1px solid var(--line); }
-section.block > .wrap { padding-block: 88px; }
-.eyebrow { margin: 0 0 14px; font: 500 11px/1 var(--mono); letter-spacing: .28em; text-transform: uppercase; color: var(--led); }
-h2 { margin: 0 0 18px; max-width: 22ch; font: 500 clamp(24px, 3.4vw, 38px)/1.15 var(--display); text-wrap: balance; }
-.lede { margin: 0; max-width: 60ch; color: var(--steel); }
-
-.services { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr)); gap: 1px; margin-top: 48px; background: var(--line); border: 1px solid var(--line); }
-.svc { position: relative; display: grid; grid-template-rows: auto auto 1fr auto; gap: 12px; padding: 30px 28px; background: var(--night); min-width: 0; overflow: hidden; }
-.svc::before { /* headlight sweep on hover */
-  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .4s;
-  background: radial-gradient(420px 160px at var(--mx, 50%) var(--my, 0%), color-mix(in srgb, var(--led) 10%, transparent), transparent 70%);
-}
-.svc:hover::before { opacity: 1; }
-.svc .code { font: 500 11px/1 var(--mono); letter-spacing: .14em; color: var(--steel); }
-.svc h3 { margin: 0; font: 500 18px/1.3 var(--display); }
-.svc p { margin: 0; color: var(--steel); font-size: 15px; }
-.svc ul { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 0; padding: 0; list-style: none; }
-.svc li { padding: 5px 9px; border: 1px solid var(--line); font: 400 11px/1 var(--mono); letter-spacing: .06em; color: var(--chrome); }
-.svc .soon { color: var(--led); border-color: color-mix(in srgb, var(--led) 35%, var(--line)); }
-
-/* bench: equipment list styled like a terminal session */
-.bench { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 56px; align-items: start; }
-@media (max-width: 860px) { .bench { grid-template-columns: 1fr; gap: 36px; } }
-.term { background: var(--panel); border: 1px solid var(--line); font: 400 13px/1.9 var(--mono); overflow-x: auto; }
-.term-bar { display: flex; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid var(--line); color: var(--steel); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
-.term table { width: 100%; border-collapse: collapse; min-width: 440px; }
-.term td { padding: 7px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
-.term tr:last-child td { border-bottom: 0; }
-.term td:first-child { color: var(--chrome); white-space: nowrap; }
-.term td:last-child { color: var(--steel); }
-.ok { color: var(--led); }
-
-.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 32px; margin-top: 48px; }
-.step { display: grid; gap: 8px; padding-top: 18px; border-top: 1px solid var(--steel); }
-.step span { font: 500 11px/1 var(--mono); letter-spacing: .2em; color: var(--led); }
-.step h3 { margin: 0; font: 500 16px/1.3 var(--display); }
-.step p { margin: 0; color: var(--steel); font-size: 15px; }
-
-.contact { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 48px; align-items: end; }
-@media (max-width: 860px) { .contact { grid-template-columns: 1fr; } }
-.contact dl { display: grid; grid-template-columns: auto 1fr; gap: 14px 24px; margin: 0; font-size: 15px; }
-.contact dt { font: 500 11px/1.9 var(--mono); letter-spacing: .2em; text-transform: uppercase; color: var(--steel); }
-.contact dd { margin: 0; user-select: all; }
-
-footer { border-top: 1px solid var(--line); }
-footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding-block: 28px; font: 400 11px/1.6 var(--mono); letter-spacing: .1em; color: var(--steel); text-transform: uppercase; }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 1ms !important; animation-delay: 0ms !important; transition-duration: 1ms !important; }
+  *, *::before, *::after { animation-duration: 1ms !important; animation-delay: 0ms !important; transition-duration: 1ms !important; transition-delay: 0ms !important; }
 }
 </style>
 </head>
 <body>
 
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="markGrad" x1="0" x2="1"><stop offset="0" stop-color="#6c7783"/><stop offset=".6" stop-color="#e9eef4"/><stop offset="1" stop-color="#fff"/></linearGradient>
+    <symbol id="mark" viewBox="0 0 300 80">
+      <path d="M0 74 C50 72 90 66 130 54 C170 42 200 36 240 34 C265 33 285 36 300 40" fill="none" stroke="#56606b" stroke-width="4" vector-effect="non-scaling-stroke"/>
+      <path d="M0 74 C45 71 80 60 120 42 C160 24 195 12 235 10 C262 9 284 14 300 20" fill="none" stroke="url(#markGrad)" stroke-width="2.2" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+    </symbol>
+  </defs>
+</svg>
+
 <header class="nav">
   <div class="wrap">
-    <a class="nav-mark" href="#top" aria-label="M&amp;K Auto Services, home">
-      <svg viewBox="0 0 300 80" aria-hidden="true"><path d="M0 74 C50 72 90 66 130 54 C170 42 200 36 240 34 C265 33 285 36 300 40" fill="none" stroke="#6f7a88" stroke-width="5"/><path d="M0 74 C45 71 80 60 120 42 C160 24 195 12 235 10 C262 9 284 14 300 20" fill="none" stroke="currentColor" stroke-width="14" stroke-linecap="round"/></svg>
-      M&amp;K
-    </a>
     <nav class="nav-links" aria-label="Sections">
       <a href="#services">Services</a>
-      <a href="#bench">Equipment</a>
-      <a href="#process">How it works</a>
-      <a class="cta-link" href="#contact">Book in</a>
+      <a href="#remapping">Remapping</a>
+      <a href="#workshop">Workshop</a>
     </nav>
+    <a class="nav-mark" href="#top" aria-label="M&amp;K Auto Services, home">
+      <svg aria-hidden="true"><use href="#mark"/></svg>
+      <span class="chrome"><b>M&amp;K</b> AUTO SERVICES</span>
+    </a>
+    <a class="nav-book" href="#contact">Book in</a>
   </div>
 </header>
 
@@ -179,134 +236,238 @@ footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; g
       <button class="btn replay" id="replay" type="button">Replay</button>
     </div>
     <div class="wrap hero-copy">
-      <p class="lead">Remapping, keys and coding, done properly.</p>
-      <p>An independent workshop with dealer-level electronics on the bench. Stage 1 and 2 remaps, key programming, Mercedes coding, and all the everyday servicing and repairs.</p>
+      <p class="title chrome">Remapping, keys and coding, <b>done properly</b></p>
+      <p class="lede">An independent workshop with dealer-level electronics on the bench, and all the everyday servicing and repairs.</p>
       <div class="btns">
         <a class="btn primary" href="#contact">Book your car in</a>
-        <a class="btn" href="#services">See what we do</a>
+        <a class="btn" href="#services">What we do</a>
       </div>
     </div>
   </section>
 
-  <section class="block" id="services">
+  <section class="section" id="services">
     <div class="wrap">
-      <p class="eyebrow">Services</p>
-      <h2>Mechanical work and the electronics behind it.</h2>
-      <p class="lede">Most garages send the electronics out. We do it in house, on equipment most independents don't own.</p>
+      <div class="head">
+        <p class="kicker">Services</p>
+        <h2 class="title chrome">Mechanical and <b>electronic</b></h2>
+        <div class="rule"></div>
+        <p class="lede">Most garages send the electronics out. We do it in house, on the same car, under one roof.</p>
+      </div>
 
       <div class="services">
         <article class="svc">
-          <span class="code">ECU · TCU</span>
-          <h3>Remapping</h3>
-          <p>Custom Stage 1 and Stage 2 maps for power and economy. Your original file is read and kept before anything is written.</p>
-          <ul><li>OBD</li><li>Bench</li><li>Boot</li><li>Gearbox maps</li></ul>
+          <svg class="draw" viewBox="0 0 64 64" aria-hidden="true">
+            <rect pathLength="1" x="14" y="16" width="36" height="32" rx="4"/>
+            <path pathLength="1" style="--i:2" d="M20 16v-6M28 16v-6M36 16v-6M44 16v-6M20 48v6M28 48v6M36 48v6M44 48v6"/>
+            <path pathLength="1" style="--i:4" d="M20 40 C26 39 30 35 34 30 C38 25 41 23 44 23" stroke="var(--led)"/>
+            <path pathLength="1" style="--i:3" d="M20 41 C27 40 32 38 36 35 C39 33 42 32 44 32" stroke="var(--steel)"/>
+          </svg>
+          <h3 class="chrome">ECU remapping</h3>
+          <p>Custom Stage 1 and Stage 2 maps for power or economy. Your original file is read and kept first.</p>
+          <p class="tags">OBD · Bench · Boot · Gearbox</p>
         </article>
         <article class="svc">
-          <span class="code">IMMO · KEYS</span>
-          <h3>Keys and immobiliser</h3>
-          <p>Spare keys, all keys lost, remote coding and immobiliser faults. Usually done on your drive, without a trip to the dealer.</p>
-          <ul><li>Add key</li><li>All keys lost</li><li>Remotes</li><li>Immo repair</li></ul>
+          <svg class="draw" viewBox="0 0 64 64" aria-hidden="true">
+            <rect pathLength="1" x="20" y="22" width="24" height="34" rx="9"/>
+            <circle pathLength="1" style="--i:2" cx="32" cy="34" r="4"/>
+            <path pathLength="1" style="--i:3" d="M28 46h8"/>
+            <path pathLength="1" style="--i:4" d="M24 14 C29 10 35 10 40 14M20 9 C27 3 37 3 44 9" stroke="var(--led)"/>
+          </svg>
+          <h3 class="chrome">Keys and immobiliser</h3>
+          <p>Spare keys, all keys lost, remotes and immobiliser faults, usually without a trip to the dealer.</p>
+          <p class="tags">Add key · All lost · Remotes</p>
         </article>
         <article class="svc">
-          <span class="code">MB · VAG · BMW</span>
-          <h3>Dealer-level coding</h3>
-          <p>Full Mercedes coverage with Abrites: SCN coding, variant coding, module replacement and adaptations. VAG and BMW coming soon.</p>
-          <ul><li>Mercedes</li><li class="soon">VAG soon</li><li class="soon">BMW soon</li></ul>
+          <svg class="draw" viewBox="0 0 64 64" aria-hidden="true">
+            <path pathLength="1" d="M10 22 H54 L48 44 H16 Z"/>
+            <path pathLength="1" style="--i:2" d="M19 29h2M25 29h2M31 29h2M37 29h2M43 29h2M22 37h2M28 37h2M34 37h2M40 37h2"/>
+            <path pathLength="1" style="--i:4" d="M32 44 V50 C32 54 34 56 38 56 H52" stroke="var(--led)"/>
+          </svg>
+          <h3 class="chrome">Dealer-level coding</h3>
+          <p>Full Mercedes coding, variant coding, module replacement and adaptations. VAG and BMW coming soon.</p>
+          <p class="tags">SCN · Variant coding · Adaptations</p>
         </article>
         <article class="svc">
-          <span class="code">EEPROM · FLASH</span>
-          <h3>Module cloning and repair</h3>
-          <p>Failed ECU, gearbox or body module? We read, repair or clone the data onto a replacement unit so it works first time.</p>
-          <ul><li>ECU clone</li><li>EEPROM</li><li>BSI / BCM</li></ul>
+          <svg class="draw" viewBox="0 0 64 64" aria-hidden="true">
+            <rect pathLength="1" x="6" y="20" width="20" height="24" rx="3"/>
+            <rect pathLength="1" style="--i:2" x="38" y="20" width="20" height="24" rx="3"/>
+            <path pathLength="1" style="--i:4" d="M28 32 H36 M32 28 L36 32 L32 36" stroke="var(--led)"/>
+            <path pathLength="1" style="--i:3" d="M11 27h10M11 32h10M11 37h6M43 27h10M43 32h10M43 37h6"/>
+          </svg>
+          <h3 class="chrome">Module cloning</h3>
+          <p>A failed ECU, gearbox or body module is read, repaired or cloned onto a replacement so it works first time.</p>
+          <p class="tags">ECU · EEPROM · BSI / BCM</p>
         </article>
         <article class="svc">
-          <span class="code">DTC · LIVE DATA</span>
-          <h3>Diagnostics</h3>
-          <p>Warning lights, electrical faults and intermittent problems traced properly, with live data rather than guesswork.</p>
-          <ul><li>Fault finding</li><li>Wiring</li><li>Sensors</li></ul>
+          <svg class="draw" viewBox="0 0 64 64" aria-hidden="true">
+            <circle pathLength="1" cx="32" cy="32" r="24"/>
+            <path pathLength="1" style="--i:3" d="M12 34 H22 L26 24 L32 44 L37 28 L40 34 H52" stroke="var(--led)"/>
+          </svg>
+          <h3 class="chrome">Diagnostics</h3>
+          <p>Warning lights, electrical faults and intermittent problems traced properly with live data.</p>
+          <p class="tags">Fault codes · Wiring · Sensors</p>
         </article>
         <article class="svc">
-          <span class="code">SERVICE · REPAIR</span>
-          <h3>Servicing and repairs</h3>
-          <p>Everyday work as well: services, brakes, suspension, clutches and pre-MOT checks, at independent prices.</p>
-          <ul><li>Servicing</li><li>Brakes</li><li>Suspension</li><li>Clutches</li></ul>
+          <svg class="draw" viewBox="0 0 64 64" aria-hidden="true">
+            <circle pathLength="1" cx="32" cy="32" r="22"/>
+            <circle pathLength="1" style="--i:2" cx="32" cy="32" r="8"/>
+            <path pathLength="1" style="--i:3" d="M32 16v3M45.3 25.5l-2.6 1.5M45.3 38.5l-2.6-1.5M32 48v-3M18.7 38.5l2.6-1.5M18.7 25.5l2.6 1.5"/>
+            <path pathLength="1" style="--i:4" d="M46 12 C55 17 60 26 59 36" stroke="var(--led)"/>
+          </svg>
+          <h3 class="chrome">Servicing and repairs</h3>
+          <p>Services, brakes, suspension, clutches and pre-MOT checks, at independent prices.</p>
+          <p class="tags">Service · Brakes · Suspension</p>
         </article>
       </div>
     </div>
   </section>
 
-  <section class="block" id="bench">
-    <div class="wrap bench">
-      <div>
-        <p class="eyebrow">On the bench</p>
-        <h2>Real tools, not a cheap cable and a laptop.</h2>
-        <p class="lede">We have put serious money into professional programming and diagnostic equipment. It means we can read, back up and write modules safely, and fix the jobs other garages turn away.</p>
-      </div>
-      <div class="term" role="region" aria-label="Workshop equipment" tabindex="0">
-        <div class="term-bar"><span>mk-auto ~ equipment</span><span class="ok">● online</span></div>
-        <table>
-          <tbody>
-            <tr><td>Magic Motorsport</td><td>ECU and TCU reading and writing, OBD / bench / boot</td></tr>
-            <tr><td>Transdata</td><td>Bench and boot mode ECU programming</td></tr>
-            <tr><td>Ioprog</td><td>ECU, BSI and EEPROM programming</td></tr>
-            <tr><td>VVDI Prog</td><td>EEPROM and MCU reading for keys and modules</td></tr>
-            <tr><td>Launch X431 IMMO</td><td>Key programming and immobiliser functions</td></tr>
-            <tr><td>Abrites</td><td><span class="ok">Mercedes: full</span> · VAG and BMW coming soon</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </section>
-
-  <section class="block" id="process">
+  <section class="section" id="remapping">
     <div class="wrap">
-      <p class="eyebrow">How a remap works</p>
-      <h2>Four steps, and your original file is always kept.</h2>
-      <div class="steps">
-        <div class="step"><span>STEP 1</span><h3>Health check</h3><p>Scan for faults and check the car is fit to tune before we touch anything.</p></div>
-        <div class="step"><span>STEP 2</span><h3>Read and back up</h3><p>The original software is read and stored, so the car can always go back to standard.</p></div>
-        <div class="step"><span>STEP 3</span><h3>Write the map</h3><p>The tuned file goes on, matched to your car and any modifications.</p></div>
-        <div class="step"><span>STEP 4</span><h3>Road test</h3><p>Live data logging on the road to confirm everything runs as it should.</p></div>
+      <div class="head">
+        <p class="kicker">Remapping</p>
+        <h2 class="title chrome">The curve <b>in our logo</b></h2>
+        <div class="rule"></div>
+        <p class="lede">Every remap is written for your car and checked on the road with live logging. This is what a typical Stage 1 looks like.</p>
+      </div>
+
+      <div class="dyno">
+        <figure class="chart" style="margin:0">
+          <svg viewBox="0 0 820 380" role="img" aria-label="Power against engine speed. Stock peaks at 150 bhp; Stage 1 peaks at 188 bhp.">
+            <defs>
+              <linearGradient id="tunedGrad" x1="0" x2="1"><stop offset="0" stop-color="#7f8a96"/><stop offset=".55" stop-color="#e9eef4"/><stop offset="1" stop-color="#ffffff"/></linearGradient>
+              <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(191,227,255,.16)"/><stop offset="1" stop-color="rgba(191,227,255,0)"/></linearGradient>
+            </defs>
+            <g class="grid" id="grid"></g>
+            <line class="axis" x1="70" y1="320" x2="780" y2="320"/>
+            <path class="area" id="area"/>
+            <path class="stock" id="stock" pathLength="1"/>
+            <path class="tuned" id="tuned" pathLength="1"/>
+            <g id="labels"></g>
+          </svg>
+          <figcaption class="small" style="text-align:center;margin-top:12px">Example: 2.0 TDI 150, Stage 1. Every car is different and gains are confirmed after the map is written.</figcaption>
+        </figure>
+        <div class="stats">
+          <div class="stat"><strong class="chrome">+38</strong><span>bhp at peak</span></div>
+          <div class="stat"><strong class="chrome">+70</strong><span>Nm of torque</span></div>
+          <div class="stat"><strong class="chrome">100%</strong><span>original file kept</span></div>
+        </div>
       </div>
     </div>
   </section>
 
-  <section class="block" id="contact">
-    <div class="wrap contact">
-      <div>
-        <p class="eyebrow">Book in</p>
-        <h2>Tell us the car and what you need.</h2>
-        <p class="lede">Send the registration and a short description. We'll come back with a price and a date.</p>
+  <section class="section" id="coverage">
+    <div class="wrap">
+      <div class="head">
+        <p class="kicker">Coding coverage</p>
+        <h2 class="title chrome">Dealer tools, <b>independent prices</b></h2>
+        <div class="rule"></div>
       </div>
-      <dl>
+      <div class="makes">
+        <div class="make on"><h3 class="chrome">Mercedes-Benz</h3><div class="bar"><i style="--fill:100%"></i></div><p>Full coverage now</p></div>
+        <div class="make"><h3 class="chrome">VW Group</h3><div class="bar"><i style="--fill:35%"></i></div><p>Coming soon</p></div>
+        <div class="make"><h3 class="chrome">BMW</h3><div class="bar"><i style="--fill:20%"></i></div><p>Coming soon</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="workshop">
+    <div class="wrap">
+      <div class="head">
+        <p class="kicker">The workshop</p>
+        <h2 class="title chrome">Real tools, <b>not a laptop and a cable</b></h2>
+        <div class="rule"></div>
+        <p class="lede">We've invested in professional programming equipment so we can read, back up and write modules safely.</p>
+      </div>
+      <div class="kit">
+        <div class="tool"><strong class="chrome">Magic Motorsport</strong><span>ECU and gearbox, OBD, bench and boot</span></div>
+        <div class="tool"><strong class="chrome">Transdata</strong><span>Bench and boot ECU programming</span></div>
+        <div class="tool"><strong class="chrome">Ioprog</strong><span>ECU, BSI and EEPROM programming</span></div>
+        <div class="tool"><strong class="chrome">VVDI Prog</strong><span>EEPROM and MCU reading for keys and modules</span></div>
+        <div class="tool"><strong class="chrome">Launch X431 IMMO</strong><span>Key programming and immobiliser</span></div>
+        <div class="tool"><strong class="chrome">Abrites</strong><span>Mercedes now, VAG and BMW to follow</span></div>
+      </div>
+
+      <div class="track">
+        <div class="station"><em>01</em><h3 class="chrome">Health check</h3><p>Scan for faults before anything is touched.</p></div>
+        <div class="station"><em>02</em><h3 class="chrome">Back up</h3><p>The original software is read and stored.</p></div>
+        <div class="station"><em>03</em><h3 class="chrome">Write</h3><p>The map goes on, matched to your car.</p></div>
+        <div class="station"><em>04</em><h3 class="chrome">Road test</h3><p>Logged on the road to confirm it runs right.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="contact">
+    <div class="wrap">
+      <div class="head">
+        <p class="kicker">Book in</p>
+        <h2 class="title chrome">Tell us the car <b>and what it needs</b></h2>
+        <div class="rule"></div>
+        <p class="lede">Send the registration and a line about the job. We'll come back with a price and a date.</p>
+      </div>
+      <div class="contact">
         <!-- Placeholders: replace with the real details before going live. -->
-        <dt>Phone</dt><dd>07XXX XXXXXX</dd>
-        <dt>Email</dt><dd>hello@mkautoservices.co.uk</dd>
-        <dt>Instagram</dt><dd>@mkautoservices</dd>
-        <dt>Hours</dt><dd>Mon to Sat, by appointment</dd>
-      </dl>
+        <p class="phone chrome">07XXX XXXXXX</p>
+        <div class="details">
+          <p style="margin:0"><span>Email</span>hello@mkautoservices.co.uk</p>
+          <p style="margin:0"><span>Instagram</span>@mkautoservices</p>
+          <p style="margin:0"><span>Hours</span>Mon to Sat, by appointment</p>
+        </div>
+        <div class="btns">
+          <a class="btn primary" href="tel:07000000000">Call the workshop</a>
+          <a class="btn" href="#services">Back to services</a>
+        </div>
+      </div>
     </div>
   </section>
 </main>
 
 <footer>
   <div class="wrap">
-    <span>M&amp;K Auto Services Limited</span>
-    <span>Remapping · Keys · Coding · Repairs</span>
+    <svg aria-hidden="true"><use href="#mark"/></svg>
+    <p class="chrome"><b style="font-weight:700">M&amp;K</b> Auto Services Limited</p>
+    <p>Remapping · Keys · Coding · Repairs</p>
   </div>
 </footer>
 
 <script src="hero.js"></script>
 <script>
-  // divider light when a section scrolls in; content is always visible
-  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("lit"); io.unobserve(e.target); } }), { threshold: .25 });
-  document.querySelectorAll("section.block").forEach(s => io.observe(s));
-  // service cards: a headlight spot follows the pointer
-  document.querySelectorAll(".svc").forEach(card => card.addEventListener("pointermove", e => {
-    const r = card.getBoundingClientRect();
-    card.style.setProperty("--mx", `${e.clientX - r.left}px`);
-    card.style.setProperty("--my", `${e.clientY - r.top}px`);
-  }));
+(() => {
+  // Dyno chart, drawn to scale: x = engine speed (1000 to 5000 rpm), y = power (0 to 200 bhp).
+  const X = rpm => 70 + (rpm - 1000) / 4000 * 710, Y = bhp => 320 - bhp / 200 * 280;
+  const rpm = [1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000];
+  const stock = [35, 62, 95, 122, 140, 149, 150, 142, 125];
+  const tuned = [40, 75, 118, 152, 174, 186, 188, 176, 150];
+  const smooth = vals => { // Catmull-Rom through the points, as cubic Béziers
+    const p = vals.map((v, i) => [X(rpm[i]), Y(v)]);
+    let d = `M${p[0][0]} ${p[0][1]}`;
+    for (let i = 0; i < p.length - 1; i++) {
+      const a = p[i - 1] || p[i], b = p[i], c = p[i + 1], e = p[i + 2] || c;
+      d += ` C${b[0] + (c[0] - a[0]) / 6} ${b[1] + (c[1] - a[1]) / 6} ${c[0] - (e[0] - b[0]) / 6} ${c[1] - (e[1] - b[1]) / 6} ${c[0]} ${c[1]}`;
+    }
+    return d;
+  };
+  const $ = id => document.getElementById(id);
+  $("stock").setAttribute("d", smooth(stock));
+  $("tuned").setAttribute("d", smooth(tuned));
+  $("area").setAttribute("d", smooth(tuned) + ` L${X(5000)} 320 L${X(1000)} 320 Z`);
+  const ns = "http://www.w3.org/2000/svg", el = (tag, a, txt) => { const n = document.createElementNS(ns, tag); for (const k in a) n.setAttribute(k, a[k]); if (txt) n.textContent = txt; return n; };
+  for (const b of [50, 100, 150, 200]) {
+    $("grid").append(el("line", { x1: 70, x2: 780, y1: Y(b), y2: Y(b) }));
+    $("labels").append(el("text", { x: 58, y: Y(b) + 4, "text-anchor": "end" }, b));
+  }
+  for (const r of [1000, 2000, 3000, 4000, 5000]) $("labels").append(el("text", { x: X(r), y: 344, "text-anchor": "middle" }, r.toLocaleString("en-GB")));
+  $("labels").append(el("text", { x: 425, y: 372, "text-anchor": "middle" }, "Engine speed (rpm)"));
+  $("labels").append(el("text", { x: 58, y: Y(200) - 20, "text-anchor": "end" }, "bhp"));
+  $("labels").append(el("text", { x: X(4000), y: Y(188) - 18, "text-anchor": "middle", class: "lbl", fill: "#e9eef4", style: "fill:#e9eef4" }, "STAGE 1 · 188"));
+  $("labels").append(el("text", { x: X(4000), y: Y(150) + 26, "text-anchor": "middle", class: "lbl" }, "STOCK · 150"));
+
+  // Sections light up as they arrive. Text is always visible; only lines draw in.
+  if (!("IntersectionObserver" in window) || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  document.documentElement.classList.add("anim");
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("lit"); io.unobserve(e.target); } }), { threshold: .2 });
+  document.querySelectorAll(".section").forEach(s => io.observe(s));
+})();
 </script>
 </body>
 </html>
