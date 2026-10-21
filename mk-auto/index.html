@@ -468,8 +468,12 @@ body::after {
   $("labels").append(el("text", { x: X(4000), y: Y(188) - 18, "text-anchor": "middle", class: "lbl", fill: "#e9eef4", style: "fill:#e9eef4" }, "STAGE 1 · 188"));
   $("labels").append(el("text", { x: X(4000), y: Y(150) + 26, "text-anchor": "middle", class: "lbl" }, "STOCK · 150"));
 
+  // Icons draw in on a first visit; returning visitors (last 30 days) see them already drawn.
+  const ICONS_KEY = "mk-icons-seen";
+  const iconsSeen = (() => { try { const v = +localStorage.getItem(ICONS_KEY); return v > 0 && Date.now() - v < 30 * 864e5; } catch (e) { return false; } })();
+  setTimeout(() => { try { localStorage.setItem(ICONS_KEY, String(Date.now())); } catch (e) {} }, 4000);
   // Sections light up as they arrive. Text is always visible; only lines draw in.
-  if (!("IntersectionObserver" in window) || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (iconsSeen || !("IntersectionObserver" in window) || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   document.documentElement.classList.add("anim");
   // Each piece animates when it is actually on screen, then locks so it never replays.
   const io = new IntersectionObserver(es => es.forEach(e => {

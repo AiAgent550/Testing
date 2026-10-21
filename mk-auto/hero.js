@@ -531,14 +531,26 @@
   }
 
   // ---------- run ----------
-  let start = 0, raf = 0, visible = true, last = 14;
+  // Returning visitors (seen the intro in the last 30 days) start on the finished scene.
+  // Stored only in the visitor's browser; nothing is sent anywhere.
+  const SEEN_KEY = "mk-intro-seen", SEEN_FOR = 30 * 864e5, SETTLED = 9.4;
+  const seenRecently = () => { try { const v = +localStorage.getItem(SEEN_KEY); return v > 0 && Date.now() - v < SEEN_FOR; } catch (e) { return false; } };
+  const markSeen = () => { try { localStorage.setItem(SEEN_KEY, String(Date.now())); } catch (e) {} };
+  let start = 0, raf = 0, visible = true, last = 14, marked = false;
   const loop = now => {
     if (!start) start = now;
     last = (now - start) / 1000;
     frame(last);
+    if (!marked && last > SETTLED) { marked = true; markSeen(); }
     raf = visible ? requestAnimationFrame(loop) : 0;
   };
-  const play = () => { start = 0; cancelAnimationFrame(raf); if (reduce) { frame(14); return; } raf = requestAnimationFrame(loop); };
+  const play = (skip) => {
+    cancelAnimationFrame(raf);
+    if (reduce) { frame(14); return; }
+    start = skip === true ? performance.now() - SETTLED * 1000 : 0;
+    if (skip === true && canvas.animate) canvas.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 700, easing: "ease-out" });
+    raf = requestAnimationFrame(loop);
+  };
 
   const img = new Image();
   img.src = canvas.dataset.plate || "assets/amg-front.jpg";
@@ -552,13 +564,13 @@
   if (CAPTURE) return;
 
   ready.then(() => {
-    play();
+    play(seenRecently());
     addEventListener("resize", () => { resize(); if (reduce || !raf) frame(last); });
     new IntersectionObserver(([e]) => {
       visible = e.isIntersecting;
       if (visible && !raf && !reduce) { const off = last; start = performance.now() - off * 1000; raf = requestAnimationFrame(loop); }
     }).observe(canvas);
     const btn = document.getElementById("replay");
-    if (btn) btn.addEventListener("click", play);
+    if (btn) btn.addEventListener("click", () => play(false));
   });
 })();

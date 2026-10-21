@@ -327,7 +327,11 @@ body::after { content: ""; position: fixed; inset: -50%; z-index: 20; pointer-ev
 (() => {
   const tabs = [...document.querySelectorAll('[role="tab"]')];
   const glide = document.querySelector(".glide");
-  const anim = "IntersectionObserver" in window && !matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // Icons draw in on a first visit; returning visitors (last 30 days) see them already drawn.
+  const ICONS_KEY = "mk-icons-seen";
+  const iconsSeen = (() => { try { const v = +localStorage.getItem(ICONS_KEY); return v > 0 && Date.now() - v < 30 * 864e5; } catch (e) { return false; } })();
+  setTimeout(() => { try { localStorage.setItem(ICONS_KEY, String(Date.now())); } catch (e) {} }, 4000);
+  const anim = !iconsSeen && "IntersectionObserver" in window && !matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (anim) document.documentElement.classList.add("anim");
   // Each icon draws when it is actually on screen, then locks so tab switches never replay it.
   const io = anim && new IntersectionObserver(es => es.forEach(e => {
