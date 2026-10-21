@@ -69,7 +69,73 @@
   const make = (w, h) => { const c = document.createElement("canvas"); c.width = Math.max(1, w | 0); c.height = Math.max(1, h | 0); return c; };
   const plateC = make(PW, PH), plateX = plateC.getContext("2d");
   const maskC = make(PW, PH), maskX = maskC.getContext("2d");
+  const ES = 2, EW = PW * ES, EH = PH * ES; // the outline is traced at double resolution
+  const eMaskC = make(EW, EH), eMaskX = eMaskC.getContext("2d");
   let photo, edges, highlights;
+
+  // Canny-style tracer: blur, gradient, thin to one-pixel ridges, then keep only
+  // weak edges that connect to strong ones. Gives clean continuous lines, no JPEG speckle.
+  function traceEdges(img) {
+    const c = make(EW, EH), g = c.getContext("2d", { willReadFrequently: true });
+    g.imageSmoothingQuality = "high"; g.drawImage(img, 0, 0, EW, EH);
+    const src = g.getImageData(0, 0, EW, EH).data, N = EW * EH;
+    let a = new Float32Array(N), b = new Float32Array(N);
+    for (let i = 0, j = 0; i < N; i++, j += 4) a[i] = (0.2126 * src[j] + 0.7152 * src[j + 1] + 0.0722 * src[j + 2]) / 255;
+
+    const K = [1, 6, 15, 20, 15, 6, 1].map(v => v / 64);
+    for (let y = 0; y < EH; y++) for (let x = 0; x < EW; x++) {
+      let s = 0;
+      for (let k = -3; k <= 3; k++) { const xx = x + k < 0 ? 0 : x + k >= EW ? EW - 1 : x + k; s += a[y * EW + xx] * K[k + 3]; }
+      b[y * EW + x] = s;
+    }
+    for (let y = 0; y < EH; y++) for (let x = 0; x < EW; x++) {
+      let s = 0;
+      for (let k = -3; k <= 3; k++) { const yy = y + k < 0 ? 0 : y + k >= EH ? EH - 1 : y + k; s += b[yy * EW + x] * K[k + 3]; }
+      a[y * EW + x] = s;
+    }
+
+    const mag = new Float32Array(N), dir = new Uint8Array(N);
+    for (let y = 1; y < EH - 1; y++) for (let x = 1; x < EW - 1; x++) {
+      const i = y * EW + x;
+      const gx = a[i - EW + 1] + 2 * a[i + 1] + a[i + EW + 1] - a[i - EW - 1] - 2 * a[i - 1] - a[i + EW - 1];
+      const gy = a[i + EW - 1] + 2 * a[i + EW] + a[i + EW + 1] - a[i - EW - 1] - 2 * a[i - EW] - a[i - EW + 1];
+      mag[i] = Math.sqrt(gx * gx + gy * gy);
+      let ang = Math.atan2(gy, gx) * 57.2958; if (ang < 0) ang += 180;
+      dir[i] = ang < 22.5 || ang >= 157.5 ? 0 : ang < 67.5 ? 1 : ang < 112.5 ? 2 : 3;
+    }
+    const OFF = [1, EW + 1, EW, EW - 1];
+    const thin = b; thin.fill(0);
+    for (let y = 1; y < EH - 1; y++) for (let x = 1; x < EW - 1; x++) {
+      const i = y * EW + x, m = mag[i], o = OFF[dir[i]];
+      if (m >= mag[i + o] && m > mag[i - o]) thin[i] = m;
+    }
+
+    const HI = 0.13, LO = 0.045, keep = new Uint8Array(N), stack = new Int32Array(N);
+    for (let i = EW; i < N - EW; i++) {
+      if (keep[i] || thin[i] < HI) continue;
+      let sp = 0; stack[sp++] = i; keep[i] = 1;
+      while (sp) {
+        const p = stack[--sp];
+        for (const q of [p - EW - 1, p - EW, p - EW + 1, p - 1, p + 1, p + EW - 1, p + EW, p + EW + 1])
+          if (!keep[q] && thin[q] >= LO) { keep[q] = 1; stack[sp++] = q; }
+      }
+    }
+
+    const out = g.createImageData(EW, EH);
+    for (let i = 0; i < N; i++) {
+      if (!keep[i]) continue;
+      const y = i / EW / ES, fade = y < FLOOR ? 1 : 0.4 * (1 - (y - FLOOR) / (PH - FLOOR));
+      const j = i * 4;
+      out.data[j] = 214; out.data[j + 1] = 236; out.data[j + 2] = 255;
+      out.data[j + 3] = clamp(0.6 + thin[i] * 1.6) * fade * 255;
+    }
+    const raw = make(EW, EH); raw.getContext("2d").putImageData(out, 0, 0);
+    // soft halo under a crisp core so the lines read as smooth light, not pixels
+    const soft = make(EW, EH), sx = soft.getContext("2d");
+    if ("filter" in sx) { sx.filter = "blur(2px)"; sx.drawImage(raw, 0, 0); sx.drawImage(raw, 0, 0); sx.filter = "blur(0.7px)"; sx.drawImage(raw, 0, 0); sx.filter = "none"; }
+    sx.globalCompositeOperation = "lighter"; sx.drawImage(raw, 0, 0);
+    return soft;
+  }
 
   function analyse(img) {
     const c = make(PW, PH), g = c.getContext("2d", { willReadFrequently: true });
@@ -78,22 +144,17 @@
     const lum = new Float32Array(PW * PH);
     for (let i = 0, j = 0; i < lum.length; i++, j += 4) lum[i] = (0.2126 * src[j] + 0.7152 * src[j + 1] + 0.0722 * src[j + 2]) / 255;
 
-    const e = g.createImageData(PW, PH), h = g.createImageData(PW, PH);
+    const h = g.createImageData(PW, PH);
     for (let y = 1; y < PH - 1; y++) {
       const fade = y < FLOOR ? 1 : 0.4 * (1 - (y - FLOOR) / (PH - FLOOR));
       for (let x = 1; x < PW - 1; x++) {
         const i = y * PW + x;
-        const gx = lum[i - PW + 1] + 2 * lum[i + 1] + lum[i + PW + 1] - lum[i - PW - 1] - 2 * lum[i - 1] - lum[i + PW - 1];
-        const gy = lum[i + PW - 1] + 2 * lum[i + PW] + lum[i + PW + 1] - lum[i - PW - 1] - 2 * lum[i - PW] - lum[i - PW + 1];
-        const m = Math.sqrt(gx * gx + gy * gy);
-        const a = Math.pow(clamp((m - 0.2) * 1.8), 0.85) * fade;
         const j = i * 4;
-        e.data[j] = 208; e.data[j + 1] = 232; e.data[j + 2] = 255; e.data[j + 3] = a * 255;
         const hl = clamp((lum[i] - 0.62) / 0.38);
         h.data[j] = src[j]; h.data[j + 1] = src[j + 1]; h.data[j + 2] = src[j + 2]; h.data[j + 3] = hl * fade * 255;
       }
     }
-    edges = make(PW, PH); edges.getContext("2d").putImageData(e, 0, 0);
+    edges = traceEdges(img);
     highlights = make(PW, PH); highlights.getContext("2d").putImageData(h, 0, 0);
     photo = make(PW, PH); photo.getContext("2d").drawImage(img, 0, 0, PW, PH);
   }
@@ -168,11 +229,13 @@
   function maskedEdges(t, ringOnly) {
     // edges revealed by an ellipse growing out from the grille; ringOnly keeps just the travelling front
     const R0 = 1150 * out3((t - T_EDGE) / (T_EDGE_END - T_EDGE));
+    const maskX = eMaskX;
     maskX.globalCompositeOperation = "source-over"; maskX.globalAlpha = 1;
-    maskX.setTransform(1, 0, 0, 1, 0, 0); maskX.clearRect(0, 0, PW, PH);
+    maskX.setTransform(1, 0, 0, 1, 0, 0); maskX.clearRect(0, 0, EW, EH);
     maskX.drawImage(edges, 0, 0);
-    if (R0 >= 1149 && !ringOnly) return maskC;
+    if (R0 >= 1149 && !ringOnly) return eMaskC;
     maskX.globalCompositeOperation = "destination-in";
+    maskX.setTransform(ES, 0, 0, ES, 0, 0);
     maskX.translate(GRILLE.x, GRILLE.y); maskX.scale(1.55, 1);
     const r = Math.max(R0, 1);
     const gr = maskX.createRadialGradient(0, 0, 0, 0, 0, r);
@@ -180,7 +243,7 @@
     else { gr.addColorStop(0, "#000"); gr.addColorStop(Math.max(0, 1 - 70 / r), "#000"); gr.addColorStop(1, "rgba(0,0,0,0)"); }
     maskX.fillStyle = gr; maskX.fillRect(-1200, -1200, 2400, 2400);
     maskX.setTransform(1, 0, 0, 1, 0, 0); maskX.globalCompositeOperation = "source-over";
-    return maskC;
+    return eMaskC;
   }
 
   function renderPlate(t) {
@@ -373,7 +436,7 @@
     const plate = renderPlate(t);
     if (plate) ctx.drawImage(plate, 0, 0);
     const ea = edgeAlpha(t);
-    if (ea > 0) { ctx.globalAlpha = ea; ctx.drawImage(maskedEdges(t, false), 0, 0); ctx.globalAlpha = 1; }
+    if (ea > 0) { ctx.globalAlpha = ea; ctx.drawImage(maskedEdges(t, false), 0, 0, PW, PH); ctx.globalAlpha = 1; }
     const gl = glints(t);
     if (gl) ctx.drawImage(gl, 0, 0);
 
@@ -381,7 +444,7 @@
     emitX.setTransform(1, 0, 0, 1, 0, 0); emitX.globalCompositeOperation = "source-over"; emitX.clearRect(0, 0, emit.width, emit.height);
     emitX.setTransform(S / 2, 0, 0, S / 2, ox / 2, oy / 2);
     emitX.globalCompositeOperation = "lighter";
-    if (t > T_EDGE && t < T_EDGE_END + 0.4) { emitX.globalAlpha = 0.9; emitX.drawImage(maskedEdges(t, true), 0, 0); emitX.globalAlpha = 1; }
+    if (t > T_EDGE && t < T_EDGE_END + 0.4) { emitX.globalAlpha = 0.9; emitX.drawImage(maskedEdges(t, true), 0, 0, PW, PH); emitX.globalAlpha = 1; }
     const gl2 = glints(t);
     if (gl2) { emitX.globalAlpha = 0.9; emitX.drawImage(gl2, 0, 0); emitX.globalAlpha = 1; }
     lights(emitX, t, S, false);
