@@ -192,3 +192,4 @@ button.row { width: 100%; border: 0; border-top: 1px solid var(--line); backgrou
 
 .flip { transform: rotate(180deg); }
 .row > svg, .row > span > svg { width: 18px; height: 18px; color: var(--steel); }
+main.view:focus { outline: none; } /* focused for screen readers on navigation, no visible ring */
