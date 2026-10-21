@@ -41,6 +41,7 @@ export async function suggestForJob(env: Env, jobId: string, actorId: string): P
   let model = "rules";
   if (aiAvailable(env)) {
     const result = await structured(env, {
+      task: "suggestions",
       system: SYSTEM_PROMPT,
       prompt: buildPrompt({ vehicle: ctx.vehicle, job: { title: ctx.job.title, description: ctx.job.description, mileage: ctx.job.mileage }, notes: ctx.notes }),
       schema: SuggestionSchema,

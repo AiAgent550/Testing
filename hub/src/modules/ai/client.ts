@@ -4,11 +4,25 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { z } from "zod";
 import type { Env } from "../../lib/env";
 
-export const AI_MODEL = "claude-opus-5-5";
+/**
+ * Model per job, chosen for cost: the cheapest model that does each job well.
+ *   triage       - sorting public comments into leads: Claude Haiku 5.5 (simple classification)
+ *   suggestions  - workshop tool suggestions: Claude Sonnet 5.5 (needs real technical judgement)
+ */
+export const AI_MODELS = {
+  triage: "claude-haiku-5-5",
+  suggestions: "claude-sonnet-5-5",
+} as const;
+export type AiTask = keyof typeof AI_MODELS;
+
+// Server-side refusal fallback is available for Claude Sonnet 5.5 (default form) but not for
+// Claude Haiku 5.5; a declined Haiku request returns null and the caller's rules take over.
+const SUPPORTS_FALLBACK = new Set<string>([AI_MODELS.suggestions]);
 
 export const aiAvailable = (env: Env) => !!env.ANTHROPIC_API_KEY;
 
 export interface StructuredRequest<T extends z.ZodType> {
+  task: AiTask;
   system: string;
   prompt: string;
   schema: T;
@@ -32,8 +46,12 @@ export async function structured<T extends z.ZodType>(env: Env, req: StructuredR
   if (!env.ANTHROPIC_API_KEY) return null;
   const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY, maxRetries: 2, timeout: 60_000 });
   try {
+    const model = AI_MODELS[req.task];
+    const fallback = SUPPORTS_FALLBACK.has(model)
+      ? { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" } // on a policy decline, retry on Anthropic's recommended model
+      : {};
     const response = await client.beta.messages.create({
-      model: AI_MODEL,
+      model,
       max_tokens: req.maxTokens ?? 4000,
       system: req.system,
       messages: [{ role: "user", content: req.prompt }],
@@ -41,9 +59,7 @@ export async function structured<T extends z.ZodType>(env: Env, req: StructuredR
         effort: req.effort ?? "medium",
         format: { type: "json_schema", schema: req.jsonSchema },
       },
-      // On a policy decline the API retries on Anthropic's recommended fallback model.
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
+      ...fallback,
     } as Anthropic.Beta.Messages.MessageCreateParamsNonStreaming);
 
     if (response.stop_reason === "refusal" || response.stop_reason === "max_tokens") return null;

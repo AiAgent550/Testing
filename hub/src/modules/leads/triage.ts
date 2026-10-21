@@ -121,8 +121,9 @@ export async function triageComment(env: Env, c: Pick<CommentRow, "body" | "plat
   if (isNoise(c.body)) return { triage: heuristicTriage(c.body, c.author_handle), source: "rules" };
   if (aiAvailable(env)) {
     const res = await structured(env, {
+      task: "triage",
       system: TRIAGE_SYSTEM, prompt: buildTriagePrompt(c), schema: TriageSchema,
-      jsonSchema: TRIAGE_JSON_SCHEMA as unknown as Record<string, unknown>, effort: "low", maxTokens: 1200,
+      jsonSchema: TRIAGE_JSON_SCHEMA as unknown as Record<string, unknown>, effort: "low", maxTokens: 2000, // leaves room for Haiku's adaptive thinking before the JSON
     });
     if (res) return { triage: sanitiseTriage(res.data), source: "ai" };
   }
