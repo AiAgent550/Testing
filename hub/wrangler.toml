@@ -35,3 +35,7 @@ BUSINESS_NAME = "M&K Auto Services"
 #   DVLA_API_KEY        DVLA Vehicle Enquiry Service
 #   DVSA_CLIENT_ID, DVSA_CLIENT_SECRET, DVSA_API_KEY, DVSA_TOKEN_URL, DVSA_SCOPE   MOT history API
 #   META_APP_SECRET, YOUTUBE_API_KEY, TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET     social platforms
+#   META_APP_ID         with META_APP_SECRET: Facebook Login for Instagram + Facebook Pages
+#                       (redirect URI to register: <APP_ORIGIN>/api/social/connect/meta/callback)
+#   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET   Google OAuth for YouTube comments
+#                       (redirect URI to register: <APP_ORIGIN>/api/social/connect/google/callback)

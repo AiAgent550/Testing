@@ -17,6 +17,9 @@ export interface Env {
   DVSA_TOKEN_URL?: string;
   DVSA_SCOPE?: string;
   META_APP_SECRET?: string;
+  META_APP_ID?: string;
+  GOOGLE_CLIENT_ID?: string;
+  GOOGLE_CLIENT_SECRET?: string;
   YOUTUBE_API_KEY?: string;
   TIKTOK_CLIENT_KEY?: string;
   TIKTOK_CLIENT_SECRET?: string;
