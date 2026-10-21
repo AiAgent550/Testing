@@ -185,6 +185,46 @@ a { color: inherit; }
 .details { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 40px; color: var(--mist); font-size: 15px; }
 .details span { color: var(--steel); margin-right: 10px; font: 300 10px/1 var(--display); letter-spacing: .28em; text-transform: uppercase; }
 
+/* booking form: hairline fields on the centre axis, posts to the M&K Hub */
+.book { width: 100%; max-width: 680px; margin: clamp(40px, 6vw, 72px) auto 0; display: grid; gap: 22px; text-align: left; }
+.book-row { display: grid; gap: 22px; }
+@media (min-width: 640px) { .book-row { grid-template-columns: 1fr 1fr; } }
+.bf { display: grid; gap: 8px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.bf > label, .bf > legend { padding: 0; font: 300 10px/1.4 var(--display); letter-spacing: .28em; text-transform: uppercase; color: var(--steel); }
+.bf input, .bf select, .bf textarea {
+  width: 100%; min-height: 50px; padding: 12px 16px; border: 1px solid #2a313b; border-radius: 14px; background: rgba(255,255,255,.015);
+  color: var(--chrome); font: 400 16px/1.4 var(--body); transition: border-color .3s, box-shadow .3s; appearance: none; -webkit-appearance: none;
+}
+.bf select { background-image: linear-gradient(45deg, transparent 50%, var(--steel) 50%), linear-gradient(135deg, var(--steel) 50%, transparent 50%); background-position: calc(100% - 22px) 22px, calc(100% - 17px) 22px; background-size: 5px 5px; background-repeat: no-repeat; padding-right: 40px; }
+.bf select option { background: var(--night); color: var(--chrome); }
+.bf textarea { min-height: 120px; resize: vertical; }
+.bf input::placeholder, .bf textarea::placeholder { color: #4a535e; }
+.bf input:focus, .bf select:focus, .bf textarea:focus { outline: none; border-color: var(--led); box-shadow: 0 0 0 3px rgba(191,227,255,.1), 0 0 22px rgba(191,227,255,.08); }
+.bf [aria-invalid="true"] { border-color: #ff8a8a; }
+.bf input[type="date"] { color-scheme: dark; }
+.bf input.plate { background: #f6d24a; border-color: #f6d24a; color: #111; text-align: center; text-transform: uppercase; font: 500 22px/1 var(--mono); letter-spacing: .14em; }
+.bf input.plate::placeholder { color: rgba(17,17,17,.38); }
+.bf input.plate:focus { box-shadow: 0 0 0 3px rgba(246,210,74,.25); }
+.bf-hint { margin: 0; font-size: 14px; color: var(--steel); min-height: 1.4em; }
+.bf-hint.found { color: var(--led); }
+.bf-err { margin: 0; font-size: 14px; color: #ff8a8a; }
+.bf-err:empty { display: none; }
+.pills { display: flex; flex-wrap: wrap; gap: 10px; }
+.pills label { position: relative; }
+.pills input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.pills span { display: inline-flex; align-items: center; min-height: 44px; padding: 0 22px; border: 1px solid #2a313b; border-radius: 999px; color: var(--mist); font: 300 11px/1 var(--display); letter-spacing: .2em; text-transform: uppercase; cursor: pointer; transition: border-color .3s, color .3s; }
+.pills input:checked + span { border-color: var(--led); color: var(--led); box-shadow: inset 0 0 18px rgba(191,227,255,.08); }
+.pills input:focus-visible + span { outline: 1px solid var(--led); outline-offset: 4px; }
+.hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+.book-foot { display: grid; justify-items: center; gap: 14px; text-align: center; }
+.book-status { margin: 0; min-height: 1.5em; color: var(--mist); }
+.book-status.bad { color: #ff8a8a; }
+.book-done { display: grid; justify-items: center; gap: 16px; max-width: 560px; margin: clamp(40px, 6vw, 72px) auto 0; text-align: center; }
+.book-done:focus { outline: none; }
+.book-done .ref { margin: 0; font: 200 clamp(30px, 6vw, 56px)/1 var(--display); letter-spacing: .08em; }
+#contact [hidden] { display: none !important; }
+.book-or { margin: clamp(48px, 7vw, 80px) 0 0; text-align: center; }
+
 footer { position: relative; padding-block: 56px 64px; }
 footer::before { content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg, transparent, var(--line) 20%, var(--line) 80%, transparent); }
 footer .wrap { display: grid; justify-items: center; gap: 14px; text-align: center; }
@@ -411,6 +451,90 @@ body::after {
         <div class="rule"></div>
         <p class="lede">Send the registration and a line about the job. We'll come back with a price and a date.</p>
       </div>
+
+      <!-- Booking requests go straight into the M&K Hub. data-hub is the Hub's address:
+           http://localhost:8787 for local development; production is https://hub.mkautoservices.co.uk -->
+      <form class="book" id="book-form" data-hub="http://localhost:8787" novalidate>
+        <div class="book-row">
+          <div class="bf">
+            <label for="bf-name">Your name</label>
+            <input id="bf-name" name="name" autocomplete="name" required maxlength="120" aria-describedby="bf-name-err">
+            <p class="bf-err" id="bf-name-err"></p>
+          </div>
+          <div class="bf">
+            <label for="bf-phone">Phone</label>
+            <input id="bf-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" required maxlength="32" aria-describedby="bf-phone-err">
+            <p class="bf-err" id="bf-phone-err"></p>
+          </div>
+        </div>
+        <div class="book-row">
+          <div class="bf">
+            <label for="bf-email">Email (optional)</label>
+            <input id="bf-email" name="email" type="email" autocomplete="email" maxlength="254" aria-describedby="bf-email-err">
+            <p class="bf-err" id="bf-email-err"></p>
+          </div>
+          <div class="bf">
+            <label for="bf-reg">Registration</label>
+            <input id="bf-reg" class="plate" name="reg" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="10" placeholder="AB12 CDE" aria-describedby="bf-reg-found bf-reg-err">
+            <p class="bf-hint" id="bf-reg-found" aria-live="polite"></p>
+            <p class="bf-err" id="bf-reg-err"></p>
+          </div>
+        </div>
+        <div class="book-row">
+          <div class="bf">
+            <label for="bf-service">What do you need?</label>
+            <select id="bf-service" name="service" required aria-describedby="bf-service-err">
+              <option value="remap">ECU remapping</option>
+              <option value="keys">Keys and immobiliser</option>
+              <option value="coding">Dealer-level coding</option>
+              <option value="modules">Module cloning</option>
+              <option value="diagnostics">Diagnostics</option>
+              <option value="servicing">Servicing and repairs</option>
+              <option value="other">Something else</option>
+            </select>
+            <p class="bf-err" id="bf-service-err"></p>
+          </div>
+          <div class="bf">
+            <label for="bf-date">Preferred date (optional)</label>
+            <input id="bf-date" name="preferred_date" type="date" aria-describedby="bf-date-err">
+            <p class="bf-err" id="bf-date-err"></p>
+          </div>
+        </div>
+        <div class="bf">
+          <label for="bf-desc">Tell us about the job</label>
+          <textarea id="bf-desc" name="description" maxlength="1000" placeholder="Warning lights, the key you need, the map you're after..." aria-describedby="bf-desc-err"></textarea>
+          <p class="bf-err" id="bf-desc-err"></p>
+        </div>
+        <fieldset class="bf">
+          <legend>Where</legend>
+          <div class="pills">
+            <label><input type="radio" name="location" value="workshop" checked><span>At the workshop</span></label>
+            <label><input type="radio" name="location" value="mobile"><span>Come to me</span></label>
+          </div>
+          <p class="bf-err" id="bf-location-err"></p>
+        </fieldset>
+        <div class="bf" id="bf-address-wrap" hidden>
+          <label for="bf-address">Where's the car?</label>
+          <textarea id="bf-address" name="address" maxlength="300" autocomplete="street-address" placeholder="Address and postcode" aria-describedby="bf-address-err"></textarea>
+          <p class="bf-err" id="bf-address-err"></p>
+        </div>
+        <div class="hp" aria-hidden="true">
+          <label for="bf-website">Leave this empty</label>
+          <input id="bf-website" name="website" tabindex="-1" autocomplete="off">
+        </div>
+        <div class="book-foot">
+          <button class="btn primary" type="submit">Send booking request</button>
+          <p class="book-status" id="book-status" role="status" aria-live="polite"></p>
+        </div>
+      </form>
+
+      <div class="book-done" id="book-done" tabindex="-1" hidden>
+        <p class="kicker">Request received</p>
+        <p class="ref chrome" id="book-ref"></p>
+        <p class="lede">Thanks. That's your booking reference. We'll call or message you to agree a price and a date.</p>
+      </div>
+
+      <p class="kicker book-or">Or get in touch directly</p>
       <div class="contact">
         <!-- Placeholders: replace with the real details before going live. -->
         <p class="phone chrome">07XXX XXXXXX</p>
@@ -425,6 +549,93 @@ body::after {
         </div>
       </div>
     </div>
+    <script>
+    // Booking form: looks the registration up for a friendly confirmation, then sends the request to the Hub.
+    (() => {
+      const form = document.getElementById("book-form");
+      if (!form || !window.fetch) return;
+      const hub = (form.dataset.hub || "").replace(/\/$/, "");
+      const $ = id => document.getElementById(id);
+      const status = $("book-status"), regOut = $("bf-reg-found"), addressWrap = $("bf-address-wrap");
+      const button = form.querySelector('button[type="submit"]');
+      const ERR_IDS = { name: "bf-name-err", phone: "bf-phone-err", email: "bf-email-err", reg: "bf-reg-err", service: "bf-service-err", preferred_date: "bf-date-err", description: "bf-desc-err", location: "bf-location-err", address: "bf-address-err" };
+      const pad = n => String(n).padStart(2, "0");
+      const d = new Date();
+      form.elements.preferred_date.min = d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+
+      form.addEventListener("change", e => {
+        if (e.target.name === "location") addressWrap.hidden = form.elements.location.value !== "mobile";
+      });
+
+      const normReg = s => String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+      const describe = v => [[v.year, v.make, v.model].filter(Boolean).join(" "), v.colour ? String(v.colour).toLowerCase() : ""].filter(Boolean).join(", ");
+      let lastReg = "";
+      form.elements.reg.addEventListener("blur", async () => {
+        const reg = normReg(form.elements.reg.value);
+        if (reg === lastReg) return;
+        lastReg = reg;
+        regOut.textContent = ""; regOut.classList.remove("found");
+        if (reg.length < 2) return;
+        try {
+          const res = await fetch(hub + "/api/public/vehicle/" + encodeURIComponent(reg));
+          if (!res.ok || reg !== lastReg) return;
+          const v = await res.json();
+          if (v.found && describe(v)) { regOut.textContent = describe(v); regOut.classList.add("found"); }
+          else regOut.textContent = "We couldn't find that registration. Check it, or send it anyway.";
+        } catch (e) { /* lookup is a nicety; the form still works */ }
+      });
+
+      function showErrors(fields) {
+        let firstBad = null;
+        for (const [name, id] of Object.entries(ERR_IDS)) {
+          const msg = fields[name] || "";
+          $(id).textContent = msg;
+          const input = form.querySelector('[name="' + name + '"]:not([type="radio"])');
+          if (input) { if (msg) input.setAttribute("aria-invalid", "true"); else input.removeAttribute("aria-invalid"); }
+          if (msg && !firstBad) firstBad = input || form.querySelector('[name="' + name + '"]');
+        }
+        return firstBad;
+      }
+
+      form.addEventListener("submit", async e => {
+        e.preventDefault();
+        const data = Object.fromEntries(new FormData(form));
+        if (data.location !== "mobile") delete data.address;
+        const missing = {};
+        if (!String(data.name || "").trim()) missing.name = "Please tell us your name.";
+        if (!String(data.phone || "").trim()) missing.phone = "We need a number to call you back on.";
+        const bad = showErrors(missing);
+        if (bad) { status.textContent = "Please check the highlighted fields."; status.classList.add("bad"); bad.focus(); return; }
+
+        button.disabled = true;
+        status.classList.remove("bad");
+        status.textContent = "Sending your request...";
+        try {
+          const res = await fetch(hub + "/api/public/bookings", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(data) });
+          const body = await res.json().catch(() => ({}));
+          if (res.ok && body.ref) {
+            $("book-ref").textContent = body.ref;
+            form.hidden = true;
+            const done = $("book-done");
+            done.hidden = false;
+            done.focus();
+            return;
+          }
+          const first = showErrors((body.error && body.error.fields) || {});
+          status.textContent = res.status === 429
+            ? "We've had a lot of requests from this connection. Please call or email us instead."
+            : (body.error && body.error.message) || "Something went wrong. Please call or email us instead.";
+          status.classList.add("bad");
+          if (first) first.focus();
+        } catch (err) {
+          status.textContent = "We couldn't send that just now. Please call or email us instead.";
+          status.classList.add("bad");
+        } finally {
+          button.disabled = false;
+        }
+      });
+    })();
+    </script>
   </section>
 </main>
 
