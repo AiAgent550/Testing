@@ -21,3 +21,8 @@ export async function createBooking(_env: Env, _input: BookingInput, _actorId: s
 export async function getBooking(_env: Env, _id: string): Promise<BookingRow | null> {
   throw new Error("bookings.getBooking not implemented yet");
 }
+
+/** Moves a booking to a new status (validated transitions). Jobs call this when work starts or finishes. */
+export async function setBookingStatus(_env: Env, _id: string, _status: import("../../lib/types").BookingStatus, _actorId: string | null): Promise<BookingRow> {
+  throw new Error("bookings.setBookingStatus not implemented yet");
+}

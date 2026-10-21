@@ -20,3 +20,12 @@ export async function lookupVehicle(_env: Env, _reg: string): Promise<VehicleLoo
 export async function ensureVehicle(_env: Env, _reg: string, _customerId: string | null, _actorId: string | null): Promise<VehicleRow> {
   throw new Error("vehicles.ensureVehicle not implemented yet");
 }
+
+/** Updates details captured at the car (VIN from the scan tool, current mileage). */
+export async function updateVehicle(_env: Env, _id: string, _patch: { vin?: string | null; last_mileage?: number | null }, _actorId: string | null): Promise<VehicleRow> {
+  throw new Error("vehicles.updateVehicle not implemented yet");
+}
+
+export async function getVehicle(_env: Env, _id: string): Promise<VehicleRow | null> {
+  throw new Error("vehicles.getVehicle not implemented yet");
+}
