@@ -1,0 +1,37 @@
+# M&K Hub: one Cloudflare Worker serving the dashboard, the API and scheduled jobs.
+name = "mk-hub"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = true          # every request passes the auth gate in src/index.ts first
+html_handling = "auto-trailing-slash"
+not_found_handling = "none"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "mk-hub"
+database_id = "00000000-0000-0000-0000-000000000000"   # replaced with the real id after `wrangler d1 create mk-hub`
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "FILES"
+bucket_name = "mk-hub-files"
+
+[triggers]
+crons = ["*/10 * * * *"]          # comment watcher and outbox sender
+
+[vars]
+APP_ORIGIN = "http://localhost:8787"          # production: https://hub.mkautoservices.co.uk
+SITE_ORIGIN = "http://localhost:8765"         # production: https://mkautoservices.co.uk
+BUSINESS_NAME = "M&K Auto Services"
+
+# Secrets (never in this file). Set with `wrangler secret put NAME`, or .dev.vars locally:
+#   ENCRYPTION_KEY      32 random bytes, base64 (encrypts 2FA secrets and platform tokens)
+#   ANTHROPIC_API_KEY   AI suggestions and lead triage (features fall back gracefully without it)
+#   DVLA_API_KEY        DVLA Vehicle Enquiry Service
+#   DVSA_CLIENT_ID, DVSA_CLIENT_SECRET, DVSA_API_KEY, DVSA_TOKEN_URL, DVSA_SCOPE   MOT history API
+#   META_APP_SECRET, YOUTUBE_API_KEY, TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET     social platforms

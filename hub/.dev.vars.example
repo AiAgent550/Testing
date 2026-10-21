@@ -1,0 +1,4 @@
+# Copy to .dev.vars for local development. Never commit .dev.vars.
+ENCRYPTION_KEY=
+ANTHROPIC_API_KEY=
+DVLA_API_KEY=

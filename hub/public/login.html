@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#050608">
+<title>Sign in · M&amp;K Hub</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200;300;500;700&family=Manrope:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="/assets/hub.css">
+<script type="module" src="/assets/login.js"></script>
+</head>
+<body>
+<main class="auth">
+  <div class="auth-card">
+    <div class="brand">
+      <svg viewBox="0 0 300 80" aria-hidden="true">
+        <defs><linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="#6c7783"/><stop offset=".6" stop-color="#e9eef4"/><stop offset="1" stop-color="#fff"/></linearGradient></defs>
+        <path d="M0 74 C50 72 90 66 130 54 C170 42 200 36 240 34 C265 33 285 36 300 40" fill="none" stroke="#56606b" stroke-width="3"/>
+        <path d="M0 74 C45 71 80 60 120 42 C160 24 195 12 235 10 C262 9 284 14 300 20" fill="none" stroke="url(#g)" stroke-width="6" stroke-linecap="round"/>
+      </svg>
+      <span class="chrome"><b>M&amp;K</b> HUB</span>
+    </div>
+
+    <!-- step 1: password -->
+    <form class="card form" id="step-password" novalidate>
+      <h1 class="h2">Sign in</h1>
+      <label class="field"><span>Email</span><input class="input" id="email" type="email" autocomplete="username" required></label>
+      <label class="field"><span>Password</span><input class="input" id="password" type="password" autocomplete="current-password" required></label>
+      <p class="err" id="err-password" role="alert" hidden></p>
+      <button class="btn primary" type="submit">Continue</button>
+    </form>
+
+    <!-- step 2a: first sign-in, set up the authenticator app -->
+    <form class="card form" id="step-setup" novalidate hidden>
+      <h1 class="h2">Set up two-step sign-in</h1>
+      <p class="muted small">Open an authenticator app (Google Authenticator, Microsoft Authenticator or 1Password), add an account with a setup key, and enter this key:</p>
+      <div class="secret" id="secret"></div>
+      <a class="btn small" id="otpauth" href="#">Open in authenticator app</a>
+      <label class="field"><span>Then enter the 6-digit code it shows</span><input class="input code-input" id="setup-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required></label>
+      <p class="err" id="err-setup" role="alert" hidden></p>
+      <button class="btn primary" type="submit">Turn on and sign in</button>
+    </form>
+
+    <!-- step 2b: returning user -->
+    <form class="card form" id="step-totp" novalidate hidden>
+      <h1 class="h2">Enter your code</h1>
+      <p class="muted small">Open your authenticator app and type the current 6-digit code for M&amp;K Hub.</p>
+      <label class="field"><span>Code</span><input class="input code-input" id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required></label>
+      <p class="err" id="err-totp" role="alert" hidden></p>
+      <button class="btn primary" type="submit">Sign in</button>
+    </form>
+  </div>
+</main>
+</body>
+</html>
