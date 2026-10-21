@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>M&amp;K Auto Services</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="M&amp;K Auto Services: ECU remapping, key programming, Mercedes coding and general repairs.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;500;700&family=Manrope:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one cinematic stage (car front + monogram), then a quiet spec-sheet below it. Single dark look. */
+:root {
+  --night: #050608;        /* page */
+  --panel: #0c0e12;        /* raised surfaces */
+  --line: #1c2028;         /* hairlines */
+  --steel: #6f7a88;        /* drawn outline, muted text */
+  --chrome: #e9eef4;       /* primary text */
+  --led: #bfe3ff;          /* headlight ice: the one accent */
+  --display: "Unbounded", "Arial Black", system-ui, sans-serif;
+  --body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--night); }
+body {
+  margin: 0; color: var(--chrome); font: 400 16px/1.6 var(--body);
+  -webkit-font-smoothing: antialiased; overflow-x: hidden;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--night); }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--led); outline-offset: 3px; }
+
+.wrap {
+  max-width: 1180px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+/* ---------- nav ---------- */
+.nav {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: color-mix(in srgb, var(--night) 82%, transparent);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.nav .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 14px; }
+.nav-mark { display: flex; align-items: center; gap: 10px; text-decoration: none; font: 500 13px/1 var(--display); letter-spacing: .08em; }
+.nav-mark svg { width: 34px; height: 22px; }
+.nav-links { display: flex; gap: 22px; font: 500 12px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--steel); }
+.nav-links a { text-decoration: none; transition: color .2s; }
+.nav-links a:hover { color: var(--chrome); }
+@media (max-width: 640px) { .nav-links a:not(.cta-link) { display: none; } }
+.cta-link { color: var(--led); }
+
+/* ---------- hero ---------- */
+.hero { position: relative; padding-block: 48px 24px; text-align: center; overflow: hidden; }
+.hero::after { /* film grain */
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .06; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.brand { position: relative; z-index: 2; display: grid; justify-items: center; gap: 14px; min-height: 150px; }
+.mono { width: clamp(120px, 18vw, 170px); height: auto; overflow: visible; }
+.mono path { fill: none; stroke: var(--chrome); stroke-width: 8; stroke-linecap: square; stroke-linejoin: miter; }
+.mono .node { fill: var(--led); }
+.wordmark {
+  margin: 0; font: 300 clamp(15px, 2.2vw, 22px)/1 var(--display); letter-spacing: .42em; text-indent: .42em;
+  text-transform: uppercase;
+  background: linear-gradient(100deg, var(--chrome) 0%, var(--chrome) 42%, #ffffff 50%, var(--led) 54%, var(--chrome) 62%, var(--chrome) 100%);
+  background-size: 300% 100%; background-position: 100% 0;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.wordmark b { font-weight: 700; }
+.tagline { margin: 0; font: 500 11px/1.4 var(--mono); letter-spacing: .3em; text-transform: uppercase; color: var(--steel); }
+
+.stage { position: relative; width: min(1100px, 100%); margin: -10px auto 0; }
+@media (max-width: 640px) { .stage { margin-top: 16px; } }
+.stage svg { display: block; width: 100%; height: auto; overflow: visible; }
+.outline path, .outline circle { fill: none; stroke: var(--steel); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.outline .lamp { fill: #0a0d11; transition: fill 1.2s ease; }
+.shine path, .shine circle { fill: none; stroke: url(#sweep); stroke-width: 2.2; stroke-linecap: round; }
+.drlglow path { fill: none; stroke: var(--led); stroke-width: 5; stroke-linecap: round; opacity: 0; }
+.drlcore path { fill: none; stroke: #ffffff; stroke-width: 1.8; stroke-linecap: round; opacity: 0; }
+.bloom, .flare, .floor { opacity: 0; }
+.badge-ring { fill: none; stroke: var(--steel); stroke-width: 1.4; }
+
+.hero-copy { position: relative; z-index: 2; display: grid; justify-items: center; gap: 18px; margin-top: 8px; }
+.hero-copy h1 { margin: 0; max-width: 20ch; font: 500 clamp(26px, 4.4vw, 50px)/1.1 var(--display); letter-spacing: -.01em; text-wrap: balance; }
+.hero-copy p { margin: 0; max-width: 56ch; color: var(--steel); text-wrap: pretty; }
+.btns { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+.btn {
+  display: inline-flex; align-items: center; gap: 10px; padding: 14px 22px; border-radius: 2px;
+  font: 500 12px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; text-decoration: none;
+  border: 1px solid var(--line); background: transparent; color: var(--chrome); cursor: pointer;
+  transition: border-color .25s, background .25s, color .25s;
+}
+.btn:hover { border-color: var(--steel); }
+.btn.primary { background: var(--chrome); color: var(--night); border-color: var(--chrome); }
+.btn.primary:hover { background: var(--led); border-color: var(--led); }
+
+/* ---------- intro sequence (classes added by script) ---------- */
+.seq .brand > * { opacity: 0; }
+.seq.s-logo .brand > * { opacity: 1; transition: opacity 1s ease; }
+.seq.s-logo .mono path { animation: draw 1.6s cubic-bezier(.6,0,.2,1) both; }
+.seq.s-logo .mono .node { animation: pop .5s 1.3s both; }
+.seq.s-logo .wordmark { animation: rise 1.2s .5s both, gleam 2.4s 1.4s ease-in-out both; }
+.seq.s-logo .tagline { animation: rise 1.2s .9s both; }
+.s-drl .drlglow path { animation: flicker 0.9s steps(1) forwards; }
+.s-drl .drlcore path { animation: flicker 0.9s steps(1) forwards; }
+.s-lamps .bloom { animation: bloom 2.2s ease-out forwards; }
+.s-lamps .flare { animation: flare 2.4s ease-out forwards; }
+.s-lamps .floor { animation: fadeTo .55 2s ease forwards; }
+.s-lamps .outline .lamp { fill: #1a2633; }
+
+@keyframes draw { from { stroke-dashoffset: var(--len); } to { stroke-dashoffset: 0; } }
+@keyframes pop { from { transform: scale(0); } 70% { transform: scale(1.4); } to { transform: scale(1); } }
+@keyframes rise { from { opacity: 0; transform: translateY(10px); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes gleam { from { background-position: 100% 0; } to { background-position: 0 0; } }
+@keyframes flicker { 0% { opacity: 0 } 10% { opacity: .9 } 18% { opacity: .1 } 30% { opacity: 1 } 38% { opacity: .3 } 50%,100% { opacity: 1 } }
+@keyframes bloom { 0% { opacity: 0 } 25% { opacity: 1 } 100% { opacity: .62 } }
+@keyframes flare { 0% { opacity: 0; transform: scaleX(.2) } 25% { opacity: 1; transform: scaleX(1.1) } 100% { opacity: .45; transform: scaleX(1) } }
+@keyframes fadeTo { to { opacity: .55 } }
+.mono .node { transform-box: fill-box; transform-origin: center; }
+.flare { transform-box: fill-box; transform-origin: center; }
+
+.replay { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); bottom: 12px; z-index: 3; padding: 8px 12px; font-size: 10px; }
+
+/* ---------- sections ---------- */
+section.block { border-top: 1px solid var(--line); }
+section.block > .wrap { padding-block: 88px; }
+.eyebrow { margin: 0 0 14px; font: 500 11px/1 var(--mono); letter-spacing: .28em; text-transform: uppercase; color: var(--led); }
+h2 { margin: 0 0 18px; max-width: 22ch; font: 500 clamp(24px, 3.4vw, 38px)/1.15 var(--display); text-wrap: balance; }
+.lede { margin: 0; max-width: 60ch; color: var(--steel); }
+
+.services { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr)); gap: 1px; margin-top: 48px; background: var(--line); border: 1px solid var(--line); }
+.svc { position: relative; display: grid; grid-template-rows: auto auto 1fr auto; gap: 12px; padding: 30px 28px; background: var(--night); min-width: 0; overflow: hidden; }
+.svc::before { /* headlight sweep on hover */
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .4s;
+  background: radial-gradient(420px 160px at var(--mx, 50%) var(--my, 0%), color-mix(in srgb, var(--led) 10%, transparent), transparent 70%);
+}
+.svc:hover::before { opacity: 1; }
+.svc .code { font: 500 11px/1 var(--mono); letter-spacing: .14em; color: var(--steel); }
+.svc h3 { margin: 0; font: 500 18px/1.3 var(--display); }
+.svc p { margin: 0; color: var(--steel); font-size: 15px; }
+.svc ul { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 0; padding: 0; list-style: none; }
+.svc li { padding: 5px 9px; border: 1px solid var(--line); font: 400 11px/1 var(--mono); letter-spacing: .06em; color: var(--chrome); }
+.svc .soon { color: var(--led); border-color: color-mix(in srgb, var(--led) 35%, var(--line)); }
+
+/* bench: equipment list styled like a terminal session */
+.bench { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 56px; align-items: start; }
+@media (max-width: 860px) { .bench { grid-template-columns: 1fr; gap: 36px; } }
+.term { background: var(--panel); border: 1px solid var(--line); font: 400 13px/1.9 var(--mono); overflow-x: auto; }
+.term-bar { display: flex; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid var(--line); color: var(--steel); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
+.term table { width: 100%; border-collapse: collapse; min-width: 440px; }
+.term td { padding: 7px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.term tr:last-child td { border-bottom: 0; }
+.term td:first-child { color: var(--chrome); white-space: nowrap; }
+.term td:last-child { color: var(--steel); }
+.ok { color: var(--led); }
+
+.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 32px; margin-top: 48px; }
+.step { display: grid; gap: 8px; padding-top: 18px; border-top: 1px solid var(--steel); }
+.step span { font: 500 11px/1 var(--mono); letter-spacing: .2em; color: var(--led); }
+.step h3 { margin: 0; font: 500 16px/1.3 var(--display); }
+.step p { margin: 0; color: var(--steel); font-size: 15px; }
+
+.contact { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 48px; align-items: end; }
+@media (max-width: 860px) { .contact { grid-template-columns: 1fr; } }
+.contact dl { display: grid; grid-template-columns: auto 1fr; gap: 14px 24px; margin: 0; font-size: 15px; }
+.contact dt { font: 500 11px/1.9 var(--mono); letter-spacing: .2em; text-transform: uppercase; color: var(--steel); }
+.contact dd { margin: 0; user-select: all; }
+
+footer { border-top: 1px solid var(--line); }
+footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding-block: 28px; font: 400 11px/1.6 var(--mono); letter-spacing: .1em; color: var(--steel); text-transform: uppercase; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; animation-delay: 0ms !important; transition-duration: 1ms !important; }
+}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="nav-mark" href="#top" aria-label="M&amp;K Auto Services, home">
+      <svg viewBox="0 0 160 100" aria-hidden="true"><path d="M8 92V8l40 54 40-54v84M88 56 140 8M106 40l42 52" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="square"/><circle cx="88" cy="56" r="12" fill="#bfe3ff"/></svg>
+      M&amp;K
+    </a>
+    <nav class="nav-links" aria-label="Sections">
+      <a href="#services">Services</a>
+      <a href="#bench">Equipment</a>
+      <a href="#process">How it works</a>
+      <a class="cta-link" href="#contact">Book in</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero seq" id="hero" aria-label="Introduction">
+    <div class="wrap">
+      <div class="brand">
+        <!-- Monogram: M and K share one stem. The node where they join is the "&": a solder joint between mechanics and electronics. -->
+        <svg class="mono" viewBox="0 0 160 100" role="img" aria-label="M&amp;K monogram">
+          <path d="M8 92V8l40 54 40-54v84"/>
+          <path d="M88 56 140 8"/>
+          <path d="M106 40l42 52"/>
+          <circle class="node" cx="88" cy="56" r="11"/>
+        </svg>
+        <p class="wordmark"><b>M&amp;K</b> Auto Services</p>
+        <p class="tagline">Remapping · Keys · Coding · Repairs</p>
+      </div>
+
+      <div class="stage">
+        <svg id="car" viewBox="0 0 1200 600" aria-hidden="true">
+          <defs>
+            <linearGradient id="sweep" gradientUnits="userSpaceOnUse" x1="-420" y1="0" x2="-120" y2="600">
+              <stop offset="0" stop-color="#fff" stop-opacity="0"/>
+              <stop offset=".5" stop-color="#fff" stop-opacity="1"/>
+              <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+            </linearGradient>
+            <radialGradient id="bloomGrad">
+              <stop offset="0" stop-color="#ffffff" stop-opacity=".95"/>
+              <stop offset=".12" stop-color="#d9efff" stop-opacity=".7"/>
+              <stop offset=".4" stop-color="#8fc8ff" stop-opacity=".18"/>
+              <stop offset="1" stop-color="#8fc8ff" stop-opacity="0"/>
+            </radialGradient>
+            <radialGradient id="floorGrad" cx=".5" cy=".5" r=".5">
+              <stop offset="0" stop-color="#bfe3ff" stop-opacity=".35"/>
+              <stop offset="1" stop-color="#bfe3ff" stop-opacity="0"/>
+            </radialGradient>
+            <linearGradient id="groundGrad" x1="0" x2="1">
+              <stop offset="0" stop-color="#6f7a88" stop-opacity="0"/>
+              <stop offset=".5" stop-color="#6f7a88" stop-opacity=".7"/>
+              <stop offset="1" stop-color="#6f7a88" stop-opacity="0"/>
+            </linearGradient>
+            <filter id="blur6" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6"/></filter>
+            <filter id="blur3" x="-50%" y="-200%" width="200%" height="500%"><feGaussianBlur stdDeviation="2.5"/></filter>
+          </defs>
+
+          <ellipse class="floor" cx="600" cy="572" rx="520" ry="34" fill="url(#floorGrad)"/>
+          <line x1="40" y1="560" x2="1160" y2="560" stroke="url(#groundGrad)" stroke-width="1"/>
+          <g class="outline" id="outline"></g>
+          <g class="shine" id="shine"></g>
+          <g class="drlglow" id="drlglow" filter="url(#blur6)"></g>
+          <g class="drlcore" id="drlcore"></g>
+          <g style="mix-blend-mode: screen">
+            <circle class="bloom" cx="335" cy="300" r="190" fill="url(#bloomGrad)"/>
+            <circle class="bloom" cx="865" cy="300" r="190" fill="url(#bloomGrad)"/>
+            <ellipse class="flare" cx="600" cy="300" rx="560" ry="2.2" fill="#d9efff" filter="url(#blur3)"/>
+            <ellipse class="flare" cx="600" cy="300" rx="380" ry=".8" fill="#ffffff"/>
+          </g>
+        </svg>
+      </div>
+
+      <div class="hero-copy">
+        <h1>Remapping, keys and coding, done properly.</h1>
+        <p>An independent workshop with dealer-level electronics on the bench. Stage 1 and 2 remaps, key programming, Mercedes coding, and all the everyday servicing and repairs.</p>
+        <div class="btns">
+          <a class="btn primary" href="#contact">Book your car in</a>
+          <a class="btn" href="#services">See what we do</a>
+        </div>
+      </div>
+    </div>
+    <button class="btn replay" id="replay" type="button">Replay</button>
+  </section>
+
+  <section class="block" id="services">
+    <div class="wrap">
+      <p class="eyebrow">Services</p>
+      <h2>Mechanical work and the electronics behind it.</h2>
+      <p class="lede">Most garages send the electronics out. We do it in house, on equipment most independents don't own.</p>
+
+      <div class="services">
+        <article class="svc">
+          <span class="code">ECU · TCU</span>
+          <h3>Remapping</h3>
+          <p>Custom Stage 1 and Stage 2 maps for power and economy. Your original file is read and kept before anything is written.</p>
+          <ul><li>OBD</li><li>Bench</li><li>Boot</li><li>Gearbox maps</li></ul>
+        </article>
+        <article class="svc">
+          <span class="code">IMMO · KEYS</span>
+          <h3>Keys and immobiliser</h3>
+          <p>Spare keys, all keys lost, remote coding and immobiliser faults. Usually done on your drive, without a trip to the dealer.</p>
+          <ul><li>Add key</li><li>All keys lost</li><li>Remotes</li><li>Immo repair</li></ul>
+        </article>
+        <article class="svc">
+          <span class="code">MB · VAG · BMW</span>
+          <h3>Dealer-level coding</h3>
+          <p>Full Mercedes coverage with Abrites: SCN coding, variant coding, module replacement and adaptations. VAG and BMW coming soon.</p>
+          <ul><li>Mercedes</li><li class="soon">VAG soon</li><li class="soon">BMW soon</li></ul>
+        </article>
+        <article class="svc">
+          <span class="code">EEPROM · FLASH</span>
+          <h3>Module cloning and repair</h3>
+          <p>Failed ECU, gearbox or body module? We read, repair or clone the data onto a replacement unit so it works first time.</p>
+          <ul><li>ECU clone</li><li>EEPROM</li><li>BSI / BCM</li></ul>
+        </article>
+        <article class="svc">
+          <span class="code">DTC · LIVE DATA</span>
+          <h3>Diagnostics</h3>
+          <p>Warning lights, electrical faults and intermittent problems traced properly, with live data rather than guesswork.</p>
+          <ul><li>Fault finding</li><li>Wiring</li><li>Sensors</li></ul>
+        </article>
+        <article class="svc">
+          <span class="code">SERVICE · REPAIR</span>
+          <h3>Servicing and repairs</h3>
+          <p>Everyday work as well: services, brakes, suspension, clutches and pre-MOT checks, at independent prices.</p>
+          <ul><li>Servicing</li><li>Brakes</li><li>Suspension</li><li>Clutches</li></ul>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="bench">
+    <div class="wrap bench">
+      <div>
+        <p class="eyebrow">On the bench</p>
+        <h2>Real tools, not a cheap cable and a laptop.</h2>
+        <p class="lede">We have put serious money into professional programming and diagnostic equipment. It means we can read, back up and write modules safely, and fix the jobs other garages turn away.</p>
+      </div>
+      <div class="term" role="region" aria-label="Workshop equipment" tabindex="0">
+        <div class="term-bar"><span>mk-auto ~ equipment</span><span class="ok">● online</span></div>
+        <table>
+          <tbody>
+            <tr><td>Magic Motorsport</td><td>ECU and TCU reading and writing, OBD / bench / boot</td></tr>
+            <tr><td>Transdata</td><td>Bench and boot mode ECU programming</td></tr>
+            <tr><td>Ioprog</td><td>ECU, BSI and EEPROM programming</td></tr>
+            <tr><td>VVDI Prog</td><td>EEPROM and MCU reading for keys and modules</td></tr>
+            <tr><td>Launch X431 IMMO</td><td>Key programming and immobiliser functions</td></tr>
+            <tr><td>Abrites</td><td><span class="ok">Mercedes: full</span> · VAG and BMW coming soon</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="process">
+    <div class="wrap">
+      <p class="eyebrow">How a remap works</p>
+      <h2>Four steps, and your original file is always kept.</h2>
+      <div class="steps">
+        <div class="step"><span>STEP 1</span><h3>Health check</h3><p>Scan for faults and check the car is fit to tune before we touch anything.</p></div>
+        <div class="step"><span>STEP 2</span><h3>Read and back up</h3><p>The original software is read and stored, so the car can always go back to standard.</p></div>
+        <div class="step"><span>STEP 3</span><h3>Write the map</h3><p>The tuned file goes on, matched to your car and any modifications.</p></div>
+        <div class="step"><span>STEP 4</span><h3>Road test</h3><p>Live data logging on the road to confirm everything runs as it should.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="contact">
+    <div class="wrap contact">
+      <div>
+        <p class="eyebrow">Book in</p>
+        <h2>Tell us the car and what you need.</h2>
+        <p class="lede">Send the registration and a short description. We'll come back with a price and a date.</p>
+      </div>
+      <dl>
+        <!-- Placeholders: replace with the real details before going live. -->
+        <dt>Phone</dt><dd>07XXX XXXXXX</dd>
+        <dt>Email</dt><dd>hello@mkautoservices.co.uk</dd>
+        <dt>Instagram</dt><dd>@mkautoservices</dd>
+        <dt>Hours</dt><dd>Mon to Sat, by appointment</dd>
+      </dl>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>M&amp;K Auto Services Limited</span>
+    <span>Remapping · Keys · Coding · Repairs</span>
+  </div>
+</footer>
+
+<script>
+(() => {
+  // Left half of the car front (x <= 600). Every path is mirrored across x = 600.
+  const half = [
+    // body silhouette, roof to sill
+    { d: "M600 108 L432 112 C404 114 388 124 374 146 L330 212 C298 214 256 222 216 236 C186 247 169 262 163 285 L151 360 C147 392 147 422 151 452 L157 500 C159 512 167 518 179 518 L600 518" },
+    // windscreen
+    { d: "M600 124 L442 127 C422 128 412 135 404 149 L372 204 C450 200 530 199 600 199" },
+    // mirror
+    { d: "M330 212 C308 196 280 190 258 196 C244 200 241 214 251 222 C270 232 306 228 330 222" },
+    // bonnet shut line and power-dome creases
+    { d: "M600 236 C482 236 330 242 228 258" },
+    { d: "M548 202 C536 218 520 230 498 238" },
+    // headlight housing
+    { d: "M236 272 C292 266 382 266 432 275 C447 278 450 292 437 300 C401 318 330 326 268 322 C240 320 222 306 224 290 C225 280 229 274 236 272 Z", cls: "lamp" },
+    // projector lenses
+    { d: "M300 302 m-11 0 a11 11 0 1 0 22 0 a11 11 0 1 0 -22 0" },
+    { d: "M346 305 m-11 0 a11 11 0 1 0 22 0 a11 11 0 1 0 -22 0" },
+    // grille surround and slats
+    { d: "M600 262 L474 262 C458 262 450 270 450 285 L454 372 C455 388 463 396 479 396 L600 396" },
+    { d: "M600 292 L456 292" }, { d: "M600 322 L458 322" }, { d: "M600 352 L460 352" },
+    // bumper, intakes, lip
+    { d: "M600 418 L424 418 C392 418 366 426 346 442" },
+    { d: "M228 406 C262 398 332 400 362 420 L382 470 C385 482 377 490 364 490 L250 490 C232 490 222 480 220 465 L216 425 C215 414 219 408 228 406 Z" },
+    { d: "M600 504 L262 506 C232 507 206 501 190 490" },
+    // tyres under the arches
+    { d: "M163 500 L163 540 C163 552 171 556 183 556 L226 556 C238 556 244 550 244 540 L244 518" },
+  ];
+  // Daytime running light strip, inside each headlight.
+  const drl = "M246 296 C300 287 382 284 428 289 C418 300 396 309 366 314";
+
+  const NS = "http://www.w3.org/2000/svg";
+  const mk = (tag, attrs) => { const el = document.createElementNS(NS, tag); for (const k in attrs) el.setAttribute(k, attrs[k]); return el; };
+  const MIRROR = "translate(1200 0) scale(-1 1)";
+  const outline = document.getElementById("outline");
+  const shine = document.getElementById("shine");
+  const glow = document.getElementById("drlglow");
+  const core = document.getElementById("drlcore");
+
+  const drawn = [];
+  half.forEach((p, i) => {
+    for (const t of [null, MIRROR]) {
+      const a = { d: p.d }; if (t) a.transform = t; if (p.cls) a.class = p.cls;
+      const el = mk("path", a); outline.appendChild(el); drawn.push([el, i]);
+      shine.appendChild(mk("path", t ? { d: p.d, transform: t } : { d: p.d }));
+    }
+  });
+  // centre badge carries the monogram
+  const ring = mk("circle", { cx: 600, cy: 327, r: 30, class: "badge-ring" });
+  outline.appendChild(ring); drawn.push([ring, 9]);
+  const badge = mk("path", { d: "M584 341V313l8 11 8-11v28M600 330l14-17M605 325l11 16", fill: "none", "stroke-width": "2.2" });
+  outline.appendChild(badge); drawn.push([badge, 10]);
+  shine.appendChild(mk("circle", { cx: 600, cy: 327, r: 30 }));
+  for (const t of [null, MIRROR]) {
+    glow.appendChild(mk("path", t ? { d: drl, transform: t } : { d: drl }));
+    core.appendChild(mk("path", t ? { d: drl, transform: t } : { d: drl }));
+  }
+
+  const hero = document.getElementById("hero");
+  const sweep = document.getElementById("sweep");
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  document.querySelectorAll(".mono path").forEach(p => p.style.setProperty("--len", p.getTotalLength()));
+
+  let timers = [], raf = 0;
+  const at = (ms, fn) => timers.push(setTimeout(fn, ms));
+
+  function runSweep(duration) {
+    const start = performance.now();
+    cancelAnimationFrame(raf);
+    const tick = now => {
+      const k = Math.min(1, (now - start) / duration);
+      const e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      sweep.setAttribute("gradientTransform", `translate(${e * 1900} 0)`);
+      if (k < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+  }
+
+  function reset() {
+    timers.forEach(clearTimeout); timers = []; cancelAnimationFrame(raf);
+    hero.classList.remove("s-logo", "s-drl", "s-lamps");
+    hero.classList.add("seq");
+    sweep.setAttribute("gradientTransform", "translate(0 0)");
+    drawn.forEach(([el]) => {
+      const len = el.getTotalLength();
+      el.style.transition = "none";
+      el.style.strokeDasharray = len; el.style.strokeDashoffset = len;
+    });
+    void outline.getBoundingClientRect();
+  }
+
+  function play() {
+    reset();
+    if (reduce) { drawn.forEach(([el]) => (el.style.strokeDashoffset = 0)); hero.classList.add("s-drl", "s-lamps", "s-logo"); return; }
+    // 1. outline draws itself, front to back
+    drawn.forEach(([el, i]) => {
+      el.style.transition = `stroke-dashoffset 2.4s cubic-bezier(.65,0,.25,1) ${i * 70}ms`;
+      el.style.strokeDashoffset = 0;
+    });
+    // 2. a light sweep travels across the bodywork
+    at(2700, () => runSweep(1700));
+    // 3. LED strips flicker on, 4. main beams bloom
+    at(4000, () => hero.classList.add("s-drl"));
+    at(4900, () => hero.classList.add("s-lamps"));
+    // 5. the monogram draws in above the car
+    at(5700, () => hero.classList.add("s-logo"));
+  }
+
+  document.getElementById("replay").addEventListener("click", play);
+  play();
+
+  // service cards: headlight spot follows the pointer
+  document.querySelectorAll(".svc").forEach(card => card.addEventListener("pointermove", e => {
+    const r = card.getBoundingClientRect();
+    card.style.setProperty("--mx", `${e.clientX - r.left}px`);
+    card.style.setProperty("--my", `${e.clientY - r.top}px`);
+  }));
+})();
+</script>
+</body>
+</html>
