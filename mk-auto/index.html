@@ -88,7 +88,7 @@ a { color: inherit; }
 .replay.btn { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); top: 16px; min-height: 34px; padding: 0 16px; font-size: 9px; background: rgba(0,0,0,.35); }
 
 /* ---------- sections ---------- */
-.section { position: relative; padding-block: clamp(88px, 12vw, 148px); }
+.section { position: relative; padding-block: clamp(56px, 10vw, 128px); }
 .section::before { /* cold key light falling on each section from above */
   content: ""; position: absolute; left: 0; right: 0; top: -160px; height: 760px; pointer-events: none;
   background: radial-gradient(42% 46% at 50% 42%, rgba(70,96,128,.12), transparent 100%);
@@ -106,7 +106,7 @@ a { color: inherit; }
 .anim .lit .rule { transform: scaleX(1); }
 
 /* services: six on the axis, no boxes */
-.services { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 72px 48px; margin-top: 88px; }
+.services { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(48px, 6vw, 72px) 48px; margin-top: clamp(48px, 7vw, 80px); }
 @media (max-width: 900px) { .services { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .services { grid-template-columns: 1fr; gap: 56px; } }
 .svc { position: relative; display: grid; justify-items: center; align-content: start; gap: 14px; text-align: center; min-width: 0; }
@@ -121,7 +121,7 @@ a { color: inherit; }
 .svc .tags { margin: 2px 0 0; color: var(--steel); font-size: 13px; letter-spacing: .04em; }
 
 /* dyno: the logo's curve, shown at full size */
-.dyno { margin-top: 72px; display: grid; justify-items: center; gap: 48px; }
+.dyno { margin-top: clamp(40px, 6vw, 72px); display: grid; justify-items: center; gap: 48px; }
 .chart { width: 100%; max-width: 920px; }
 .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
 .chart text { font-family: var(--body); font-size: 12px; fill: var(--steel); }
@@ -143,7 +143,7 @@ a { color: inherit; }
 @media (max-width: 560px) { .stats { grid-template-columns: 1fr; gap: 28px; } .stat + .stat { border-left: 0; } }
 
 /* coverage: three makes, a light bar for how far each is supported */
-.makes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px; margin-top: 80px; }
+.makes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px; margin-top: clamp(40px, 6vw, 72px); }
 @media (max-width: 720px) { .makes { grid-template-columns: 1fr; } }
 .make { display: grid; justify-items: center; gap: 12px; text-align: center; text-decoration: none; padding: 16px; border-radius: 4px; transition: background .5s; }
 .make:hover { background: radial-gradient(closest-side, rgba(120,160,205,.08), transparent); }
@@ -154,14 +154,14 @@ a { color: inherit; }
 .make.on p { color: var(--led); }
 
 /* equipment: a quiet roll call */
-.kit { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 48px 32px; margin-top: 80px; }
+.kit { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px 32px; margin-top: clamp(40px, 6vw, 72px); }
 @media (max-width: 720px) { .kit { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .tool { display: grid; justify-items: center; align-content: start; gap: 8px; text-align: center; min-width: 0; }
 .tool strong { font: 300 15px/1.3 var(--display); letter-spacing: .12em; }
 .tool span { font-size: 14px; color: var(--steel); max-width: 26ch; }
 
 /* process: one line of light with four stations */
-.track { position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 88px; }
+.track { position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: clamp(56px, 7vw, 80px); }
 .track::before { content: ""; position: absolute; top: 0; left: 12.5%; right: 12.5%; height: 1px; background: linear-gradient(90deg, transparent, rgba(191,227,255,.5) 15%, rgba(191,227,255,.5) 85%, transparent); }
 .anim .track::before { transform: scaleX(0); transform-origin: left; transition: transform 2s var(--ease) .2s; }
 .anim .track.lit::before { transform: scaleX(1); }
@@ -180,7 +180,7 @@ a { color: inherit; }
 }
 
 /* contact */
-.contact { display: grid; justify-items: center; gap: 28px; margin-top: 64px; text-align: center; }
+.contact { display: grid; justify-items: center; gap: 28px; margin-top: clamp(40px, 5vw, 64px); text-align: center; }
 .phone { margin: 0; font: 200 clamp(30px, 6vw, 64px)/1 var(--display); letter-spacing: .08em; user-select: all; }
 .details { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 40px; color: var(--mist); font-size: 15px; }
 .details span { color: var(--steel); margin-right: 10px; font: 300 10px/1 var(--display); letter-spacing: .28em; text-transform: uppercase; }
