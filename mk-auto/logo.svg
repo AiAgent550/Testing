@@ -1,10 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 200" role="img" aria-label="M&amp;K Auto Services">
-  <rect width="640" height="200" fill="#050608"/>
-  <!-- M and K share one stem; the node where they join is the "&" -->
-  <g transform="translate(40 50)" fill="none" stroke="#e9eef4" stroke-width="8" stroke-linecap="square">
-    <path d="M8 92V8l40 54 40-54v84M88 56 140 8M106 40l42 52"/>
-    <circle cx="88" cy="56" r="11" fill="#bfe3ff" stroke="none"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 210" role="img" aria-label="M&amp;K Auto Services">
+  <defs>
+    <linearGradient id="ch" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset=".45" stop-color="#c3ccd5"/><stop offset=".55" stop-color="#6c7783"/><stop offset=".62" stop-color="#e8edf2"/><stop offset="1" stop-color="#8d98a4"/></linearGradient>
+    <linearGradient id="curve" x1="0" x2="1"><stop offset="0" stop-color="#6c7783"/><stop offset=".6" stop-color="#e9eef4"/><stop offset="1" stop-color="#fff"/></linearGradient>
+  </defs>
+  <rect width="520" height="210" fill="#050608"/>
+  <!-- Mark: a tuned power curve rising over the stock curve, as on a dyno sheet -->
+  <g transform="translate(110 22)">
+    <path d="M0 76 H300" stroke="#2a313b" stroke-width="1"/>
+    <path d="M0 74 C50 72 90 66 130 54 C170 42 200 36 240 34 C265 33 285 36 300 40" fill="none" stroke="#56606b" stroke-width="1.6"/>
+    <path d="M0 74 C45 71 80 60 120 42 C160 24 195 12 235 10 C262 9 284 14 300 20" fill="none" stroke="url(#curve)" stroke-width="5" stroke-linecap="round"/>
   </g>
-  <text x="230" y="98" fill="#e9eef4" font-family="Unbounded, 'Arial Black', sans-serif" font-size="30" letter-spacing="9"><tspan font-weight="700">M&amp;K</tspan><tspan font-weight="300"> AUTO SERVICES</tspan></text>
-  <text x="232" y="134" fill="#6f7a88" font-family="'JetBrains Mono', monospace" font-size="12" letter-spacing="4.5">REMAPPING · KEYS · CODING · REPAIRS</text>
+  <text x="260" y="154" text-anchor="middle" font-family="Unbounded, 'Arial Black', sans-serif" font-size="27" letter-spacing="10" fill="url(#ch)"><tspan font-weight="700">M&amp;K</tspan><tspan font-weight="300"> AUTO SERVICES</tspan></text>
+  <text x="260" y="186" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10.5" letter-spacing="4" fill="#7a8593">REMAPPING · KEYS · CODING · REPAIRS</text>
 </svg>

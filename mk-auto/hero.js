@@ -104,8 +104,9 @@
   host.setAttribute("width", "0"); host.setAttribute("height", "0");
   host.style.cssText = "position:absolute;width:0;height:0;overflow:hidden";
   document.body.appendChild(host);
-  const MONO_SC = 1.2, MONO_CY = -150;
-  const MONO_X = 480 - 78 * MONO_SC, MONO_Y = MONO_CY - 50 * MONO_SC;
+  // Mark: a tuned power curve rising over the stock curve, like a dyno sheet.
+  const MONO_SC = 1.0, MONO_CY = -150;
+  const MONO_X = 480 - 150 * MONO_SC, MONO_Y = MONO_CY - 42 * MONO_SC;
   function sample(d, step = 1.5) {
     const p = document.createElementNS(SVGNS, "path");
     p.setAttribute("d", d); host.appendChild(p);
@@ -114,8 +115,11 @@
     p.remove();
     return pts;
   }
-  const MONO = ["M8 92V8l40 54 40-54v84", "M88 56 140 8", "M106 40l42 52"].map((d, i) => ({ pts: sample(d), delay: i * 0.28, dur: i ? 0.55 : 1.15 }));
-  const NODE = { x: 88 * MONO_SC + MONO_X, y: 56 * MONO_SC + MONO_Y, r: 11 * MONO_SC };
+  const MONO = [
+    { d: "M0 76 H300", kind: "axis", delay: 0, dur: 0.9 },
+    { d: "M0 74 C50 72 90 66 130 54 C170 42 200 36 240 34 C265 33 285 36 300 40", kind: "stock", delay: 0.25, dur: 1.0 },
+    { d: "M0 74 C45 71 80 60 120 42 C160 24 195 12 235 10 C262 9 284 14 300 20", kind: "tuned", delay: 0.75, dur: 1.2 },
+  ].map(m => ({ ...m, pts: sample(m.d) }));
   const WORD_Y = -38, TAG_Y = -6;
 
   // ---------- atmosphere ----------
@@ -238,42 +242,35 @@
   function monogram(g, t, glow) {
     const d = t - T_LOGO;
     if (d <= 0) return;
-    const top = MONO_Y + 8 * MONO_SC, bot = MONO_Y + 92 * MONO_SC;
-    let style;
-    if (glow) style = "rgba(200,230,255,.5)";
-    else {
-      style = g.createLinearGradient(0, top, 0, bot);
-      style.addColorStop(0, "#ffffff"); style.addColorStop(0.36, "#cdd5dd"); style.addColorStop(0.5, "#56606b");
-      style.addColorStop(0.57, "#eef2f6"); style.addColorStop(0.8, "#a2adb8"); style.addColorStop(1, "#6a7480");
-    }
-    g.lineCap = "butt"; g.lineJoin = "miter"; g.miterLimit = 10;
+    const top = MONO_Y + 8 * MONO_SC, bot = MONO_Y + 76 * MONO_SC;
+    g.lineCap = "round"; g.lineJoin = "round";
     for (const s of MONO) {
+      if (glow && s.kind !== "tuned") continue;
       const k = inOut((d - s.delay) / s.dur);
       if (k <= 0) continue;
       const n = Math.max(1, Math.floor(k * (s.pts.length - 1)));
       g.beginPath(); g.moveTo(s.pts[0][0], s.pts[0][1]);
       for (let i = 1; i <= n; i++) g.lineTo(s.pts[i][0], s.pts[i][1]);
-      g.strokeStyle = style; g.lineWidth = glow ? 3 : 9.6; g.stroke();
-      if (k < 1) { // pen tip
-        const [x, y] = s.pts[n];
-        g.drawImage(sprite, x - 16, y - 16, 32, 32);
+      if (glow) { g.strokeStyle = "rgba(200,230,255,.55)"; g.lineWidth = 4; }
+      else if (s.kind === "axis") { g.strokeStyle = "rgba(60,70,82,.9)"; g.lineWidth = 1; }
+      else if (s.kind === "stock") { g.strokeStyle = "rgba(110,122,136,.9)"; g.lineWidth = 1.6; }
+      else {
+        const gr = g.createLinearGradient(MONO_X, 0, MONO_X + 300 * MONO_SC, 0);
+        gr.addColorStop(0, "#6c7783"); gr.addColorStop(0.6, "#e9eef4"); gr.addColorStop(1, "#ffffff");
+        g.strokeStyle = gr; g.lineWidth = 5;
       }
+      g.stroke();
+      if (s.kind === "tuned" && k < 1) { const [x, y] = s.pts[n]; g.drawImage(sprite, x - 18, y - 18, 36, 36); } // pen tip
     }
-    const nk = clamp((d - 1.25) / 0.45);
-    if (nk > 0) {
-      const pop = nk < 0.7 ? (nk / 0.7) * 1.35 : 1.35 - (nk - 0.7) / 0.3 * 0.35;
-      g.fillStyle = glow ? "rgba(190,226,255,.9)" : "#c4e6ff";
-      g.beginPath(); g.arc(NODE.x, NODE.y, NODE.r * pop, 0, 6.283); g.fill();
-    }
-    // shine across the chrome
-    const sk = (d - 1.6) / 1.1;
+    // shine running along the tuned curve once it has drawn
+    const sk = (d - 2.1) / 1.0;
     if (!glow && sk > 0 && sk < 1) {
-      const x = lerp(MONO_X - 60, MONO_X + 230, inOut(sk));
-      const gr = g.createLinearGradient(x - 40, top, x + 40, bot);
-      gr.addColorStop(0, "rgba(255,255,255,0)"); gr.addColorStop(0.5, "rgba(255,255,255,.9)"); gr.addColorStop(1, "rgba(255,255,255,0)");
+      const tuned = MONO[2], x = lerp(MONO_X - 60, MONO_X + 360, inOut(sk));
+      const gr = g.createLinearGradient(x - 50, 0, x + 50, 0);
+      gr.addColorStop(0, "rgba(255,255,255,0)"); gr.addColorStop(0.5, "rgba(255,255,255,.95)"); gr.addColorStop(1, "rgba(255,255,255,0)");
       g.save(); g.globalCompositeOperation = "lighter";
-      for (const s of MONO) { g.beginPath(); s.pts.forEach(([px, py], i) => (i ? g.lineTo(px, py) : g.moveTo(px, py))); g.strokeStyle = gr; g.lineWidth = 9.6; g.stroke(); }
-      g.restore();
+      g.beginPath(); tuned.pts.forEach(([px, py], i) => (i ? g.lineTo(px, py) : g.moveTo(px, py)));
+      g.strokeStyle = gr; g.lineWidth = 5; g.stroke(); g.restore();
     }
   }
 

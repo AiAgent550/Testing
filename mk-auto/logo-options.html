@@ -1,0 +1,96 @@
+<title>M&amp;K Logo Options</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;700&family=Manrope:wght@400;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: three option cards on studio black, each mark shown large with a short rationale. Single dark look. */
+:root {
+  --night: #050608; --panel: #0b0d11; --line: #1c2028; --steel: #7a8593; --chrome: #e9eef4; --led: #bfe3ff;
+  --display: "Unbounded", "Arial Black", sans-serif; --body: "Manrope", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+  color-scheme: dark;
+}
+body { margin: 0; background: var(--night); color: var(--chrome); font: 400 16px/1.6 var(--body); }
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 56px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1 { margin: 0 0 8px; font: 700 clamp(22px, 3vw, 32px)/1.2 var(--display); letter-spacing: .02em; }
+.lede { margin: 0 0 40px; color: var(--steel); max-width: 60ch; }
+.grid { display: grid; gap: 20px; }
+.opt { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); background: var(--panel); border: 1px solid var(--line); }
+@media (max-width: 760px) { .opt { grid-template-columns: 1fr; } }
+.art { display: grid; place-items: center; padding: 48px 24px; background: radial-gradient(70% 90% at 50% 40%, #121924, #000 75%); min-height: 260px; }
+.art svg { width: 100%; max-width: 460px; height: auto; }
+.copy { padding: 28px; border-left: 1px solid var(--line); display: grid; align-content: center; gap: 10px; }
+@media (max-width: 760px) { .copy { border-left: 0; border-top: 1px solid var(--line); } }
+.tag { font: 500 11px/1 var(--mono); letter-spacing: .24em; text-transform: uppercase; color: var(--led); }
+.copy h2 { margin: 0; font: 700 18px/1.3 var(--display); }
+.copy p { margin: 0; color: var(--steel); font-size: 15px; }
+.rec { color: var(--chrome); font-weight: 600; }
+svg text { font-family: var(--display); }
+</style>
+
+<div class="wrap">
+  <h1>M&amp;K logo options</h1>
+  <p class="lede">The lettering stays as it is. Each option replaces the monogram and dot above it. Option A is now in the live intro, and the others can be swapped in.</p>
+
+  <div class="grid">
+    <section class="opt">
+      <div class="art">
+        <svg viewBox="0 0 520 210" role="img" aria-label="Option A: dyno curve above the wordmark">
+          <defs>
+            <linearGradient id="chA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset=".45" stop-color="#c3ccd5"/><stop offset=".55" stop-color="#6c7783"/><stop offset=".62" stop-color="#e8edf2"/><stop offset="1" stop-color="#8d98a4"/></linearGradient>
+            <linearGradient id="curveA" x1="0" x2="1"><stop offset="0" stop-color="#6c7783"/><stop offset=".6" stop-color="#e9eef4"/><stop offset="1" stop-color="#ffffff"/></linearGradient>
+          </defs>
+          <g transform="translate(110 22)">
+            <path d="M0 76 H300" stroke="#2a313b" stroke-width="1"/>
+            <path d="M0 74 C50 72 90 66 130 54 C170 42 200 36 240 34 C265 33 285 36 300 40" fill="none" stroke="#56606b" stroke-width="1.6"/>
+            <path d="M0 74 C45 71 80 60 120 42 C160 24 195 12 235 10 C262 9 284 14 300 20" fill="none" stroke="url(#curveA)" stroke-width="5" stroke-linecap="round"/>
+          </g>
+          <text x="260" y="154" text-anchor="middle" font-size="27" letter-spacing="10" fill="url(#chA)"><tspan font-weight="700">M&amp;K</tspan><tspan font-weight="300"> AUTO SERVICES</tspan></text>
+          <text x="260" y="186" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" letter-spacing="4" fill="#7a8593">REMAPPING · KEYS · CODING · REPAIRS</text>
+        </svg>
+      </div>
+      <div class="copy">
+        <span class="tag">Option A · recommended</span>
+        <h2>Dyno curve</h2>
+        <p>A tuned power curve sweeps up over the stock curve beneath it. It says "remapping" without a single car part, and it animates naturally because it draws itself like a dyno run.</p>
+        <p class="rec">Now in the live intro.</p>
+      </div>
+    </section>
+
+    <section class="opt">
+      <div class="art">
+        <svg viewBox="0 0 520 210" role="img" aria-label="Option B: angled chrome badge">
+          <defs>
+            <linearGradient id="chB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset=".45" stop-color="#c3ccd5"/><stop offset=".55" stop-color="#6c7783"/><stop offset=".62" stop-color="#e8edf2"/><stop offset="1" stop-color="#8d98a4"/></linearGradient>
+          </defs>
+          <path d="M196 18 H344 L324 104 H176 Z" fill="none" stroke="url(#chB)" stroke-width="3"/>
+          <text x="260" y="78" text-anchor="middle" font-size="40" font-weight="700" letter-spacing="4" fill="url(#chB)">M&amp;K</text>
+          <text x="260" y="152" text-anchor="middle" font-size="24" font-weight="300" letter-spacing="10" fill="url(#chB)">AUTO SERVICES</text>
+          <text x="260" y="186" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" letter-spacing="4" fill="#7a8593">REMAPPING · KEYS · CODING · REPAIRS</text>
+        </svg>
+      </div>
+      <div class="copy">
+        <span class="tag">Option B</span>
+        <h2>Performance badge</h2>
+        <p>M&amp;K inside a slanted chrome frame, like a boot-lid badge. It works well as a profile picture, a sticker for customers' cars, or a stamp on invoices.</p>
+      </div>
+    </section>
+
+    <section class="opt">
+      <div class="art">
+        <svg viewBox="0 0 520 210" role="img" aria-label="Option C: wordmark only">
+          <defs>
+            <linearGradient id="chC" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset=".45" stop-color="#c3ccd5"/><stop offset=".55" stop-color="#6c7783"/><stop offset=".62" stop-color="#e8edf2"/><stop offset="1" stop-color="#8d98a4"/></linearGradient>
+          </defs>
+          <text x="260" y="104" text-anchor="middle" font-size="64" font-weight="700" letter-spacing="10" fill="url(#chC)">M&amp;K</text>
+          <path d="M70 140 H148 M372 140 H450" stroke="#56606b" stroke-width="1"/>
+          <text x="260" y="148" text-anchor="middle" font-size="22" font-weight="300" letter-spacing="10" fill="url(#chC)">AUTO SERVICES</text>
+          <text x="260" y="186" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" letter-spacing="4" fill="#7a8593">REMAPPING · KEYS · CODING · REPAIRS</text>
+        </svg>
+      </div>
+      <div class="copy">
+        <span class="tag">Option C</span>
+        <h2>Wordmark only</h2>
+        <p>No symbol at all. A large chrome M&amp;K with AUTO SERVICES between thin rules. It's the most minimal option and closest to how tuning houses brand themselves.</p>
+      </div>
+    </section>
+  </div>
+</div>

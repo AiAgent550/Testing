@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;500;700&family=Manrope:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: one cinematic stage (car front + monogram), then a quiet spec-sheet below it. Single dark look. */
+/* Layout: one cinematic stage (car front + dyno-curve mark), then a quiet spec-sheet below it. Single dark look. */
 :root {
   --night: #050608;        /* page */
   --panel: #0c0e12;        /* raised surfaces */
@@ -49,7 +49,7 @@ a { color: inherit; }
 }
 .nav .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 14px; }
 .nav-mark { display: flex; align-items: center; gap: 10px; text-decoration: none; font: 500 13px/1 var(--display); letter-spacing: .08em; }
-.nav-mark svg { width: 34px; height: 22px; }
+.nav-mark svg { width: 40px; height: 14px; }
 .nav-links { display: flex; gap: 22px; font: 500 12px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--steel); }
 .nav-links a { text-decoration: none; transition: color .2s; }
 .nav-links a:hover { color: var(--chrome); }
@@ -159,7 +159,7 @@ footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; g
 <header class="nav">
   <div class="wrap">
     <a class="nav-mark" href="#top" aria-label="M&amp;K Auto Services, home">
-      <svg viewBox="0 0 160 100" aria-hidden="true"><path d="M8 92V8l40 54 40-54v84M88 56 140 8M106 40l42 52" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="square"/><circle cx="88" cy="56" r="12" fill="#bfe3ff"/></svg>
+      <svg viewBox="0 0 300 80" aria-hidden="true"><path d="M0 74 C50 72 90 66 130 54 C170 42 200 36 240 34 C265 33 285 36 300 40" fill="none" stroke="#6f7a88" stroke-width="5"/><path d="M0 74 C45 71 80 60 120 42 C160 24 195 12 235 10 C262 9 284 14 300 20" fill="none" stroke="currentColor" stroke-width="14" stroke-linecap="round"/></svg>
       M&amp;K
     </a>
     <nav class="nav-links" aria-label="Sections">
