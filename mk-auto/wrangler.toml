@@ -1,6 +1,11 @@
 # Curve Performance public website: static files served by a Cloudflare Worker.
 name = "curve-site"
 compatibility_date = "2026-09-01"
+workers_dev = false
+routes = [
+  { pattern = "curveperformance.co.uk", custom_domain = true },
+  { pattern = "www.curveperformance.co.uk", custom_domain = true },
+]
 
 [assets]
 directory = "."
