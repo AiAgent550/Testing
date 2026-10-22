@@ -47,7 +47,7 @@ export function sitePublic(handler: Handler): Handler {
 export const preflight: Handler = sitePublic(() => new Response(null, { status: 204 }));
 
 /** A believable reference for bots that filled the honeypot. Nothing is stored. */
-const fakeRef = () => `MK-${1000 + Math.floor(Math.random() * 9000)}`;
+const fakeRef = () => `CP-${1000 + Math.floor(Math.random() * 9000)}`;
 
 export const publicBooking: Handler = sitePublic(async ctx => {
   const { env } = ctx;

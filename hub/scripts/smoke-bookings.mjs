@@ -22,7 +22,7 @@ const booking = {
 };
 r = await anon("/api/public/bookings", { method: "POST", body: booking, headers: site });
 const ref = r.data?.ref;
-check("website booking is accepted and returns a reference", r.status === 200 && /^MK-\d+$/.test(ref || ""), r.data);
+check("website booking is accepted and returns a reference", r.status === 200 && /^CP-\d+$/.test(ref || ""), r.data);
 check("website booking answer carries the CORS header", r.res.headers.get("access-control-allow-origin") === SITE_ORIGIN && /Origin/.test(r.res.headers.get("vary") || ""));
 
 r = await anon("/api/public/bookings", { method: "POST", body: booking, headers: { origin: "https://evil.example" } });
@@ -31,7 +31,7 @@ r = await anon("/api/public/bookings", { method: "POST", body: booking });
 check("booking without an origin is rejected", r.status === 403);
 
 r = await anon("/api/public/bookings", { method: "POST", body: { ...booking, name: `Honeypot ${stamp}`, phone: "07700 900001", website: "http://spam.example" }, headers: site });
-check("honeypot gets a convincing answer", r.status === 200 && /^MK-\d+$/.test(r.data?.ref || ""));
+check("honeypot gets a convincing answer", r.status === 200 && /^CP-\d+$/.test(r.data?.ref || ""));
 const hpRef = r.data?.ref;
 
 r = await anon("/api/public/bookings", { method: "POST", body: { ...booking, phone: "" }, headers: site });

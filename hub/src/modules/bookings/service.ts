@@ -32,7 +32,7 @@ export async function createBooking(env: Env, input: BookingInput, actorId: stri
   }
 
   const id = newId("bkg"), t = now();
-  const ref = await nextRef(env, "booking_ref", "MK");
+  const ref = await nextRef(env, "booking_ref", "CP");
   await run(
     env,
     `INSERT INTO bookings (id, ref, customer_id, vehicle_id, service, description, preferred_date, location, address, status, source, lead_id, created_by, created_at, updated_at)

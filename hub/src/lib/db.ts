@@ -27,7 +27,7 @@ export async function run(env: Env, sql: string, ...params: unknown[]): Promise<
   return env.DB.prepare(sql).bind(...params).run();
 }
 
-/** Next human reference from a named counter, e.g. nextRef(env, "booking_ref", "MK") -> "MK-1001". */
+/** Next human reference from a named counter, e.g. nextRef(env, "booking_ref", "CP") -> "CP-1001". */
 export async function nextRef(env: Env, counter: string, prefix: string): Promise<string> {
   const row = await first<{ value: number }>(env, "UPDATE counters SET value = value + 1 WHERE name = ? RETURNING value", counter);
   if (!row) throw new Error(`Unknown counter ${counter}`);
