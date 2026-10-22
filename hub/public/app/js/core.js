@@ -99,7 +99,9 @@ export function toast(message, kind = "") {
 export function loading() { return h("div.loading", h("div.spinner", { role: "progressbar", "aria-label": "Loading" })); }
 
 export function empty(text, iconName = "today", action = null) {
-  return h("div.empty", icon(iconName), h("p", { style: "margin:0" }, text), action);
+  const art = icon(iconName);
+  for (const part of art.children) part.setAttribute("pathLength", "1"); // lets the line drawing draw itself in, as on the website
+  return h("div.empty", art, h("p", { style: "margin:0" }, text), action);
 }
 
 const STATUS_TONE = {

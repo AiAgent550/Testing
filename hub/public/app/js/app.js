@@ -17,6 +17,9 @@ function navItems(compact) {
 function drawNav() {
   const rail = document.getElementById("rail"), tabbar = document.getElementById("tabbar");
   const brand = document.querySelector(".topbar .brand").cloneNode(true);
+  // The topbar's mark is hidden on wide screens, and a gradient inside a hidden SVG doesn't paint, so the rail's copy gets its own.
+  brand.querySelector("linearGradient").id = "cg-rail";
+  brand.querySelectorAll("[stroke^='url(']").forEach(p => p.setAttribute("stroke", "url(#cg-rail)"));
   rail.replaceChildren(brand, ...navItems(false), h("div.grow"),
     h("button.nav-item", { type: "button", onclick: signOut, style: "border:0;background:none;cursor:pointer" }, icon("logout"), h("span", "Sign out")));
   tabbar.replaceChildren(...navItems(true));
