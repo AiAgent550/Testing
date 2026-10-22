@@ -1,4 +1,5 @@
 // Sign-in flow: password -> (first time) authenticator setup -> 6-digit code -> dashboard.
+// An invite link (/login#invite=<token>) starts with "create your account" instead of the password step.
 const $ = id => document.getElementById(id);
 
 async function call(path, method = "GET", body) {
@@ -14,8 +15,8 @@ async function call(path, method = "GET", body) {
 }
 
 function show(step) {
-  for (const id of ["step-password", "step-setup", "step-totp"]) $(id).hidden = id !== step;
-  const first = $(step).querySelector("input");
+  for (const id of ["step-password", "step-invite", "step-setup", "step-totp"]) $(id).hidden = id !== step;
+  const first = $(step).querySelector("input:not([readonly])");
   if (first) first.focus();
 }
 
@@ -28,6 +29,36 @@ async function startSetup() {
   $("otpauth").href = otpauth;
   show("step-setup");
 }
+
+const inviteToken = (location.hash.match(/^#invite=([0-9a-f]{64})$/) || [])[1];
+
+async function startInvite() {
+  try {
+    const { email } = await call("/api/auth/invite/check", "POST", { token: inviteToken });
+    $("invite-email").value = email;
+    show("step-invite");
+  } catch (err) {
+    history.replaceState(null, "", "/login");
+    show("step-password");
+    fail("err-password", err.message);
+  }
+}
+
+$("step-invite").addEventListener("submit", async e => {
+  e.preventDefault();
+  const form = e.currentTarget; $("err-invite").hidden = true;
+  const name = $("invite-name").value.trim(), password = $("invite-password").value;
+  if (!name) return fail("err-invite", "Enter your name.");
+  if (password.trim().length < 12) return fail("err-invite", "Use at least 12 characters for your password.");
+  if (password !== $("invite-password2").value) return fail("err-invite", "The two passwords don't match.");
+  busy(form, true);
+  try {
+    await call("/api/auth/invite", "POST", { token: inviteToken, name, password });
+    history.replaceState(null, "", "/login");
+    await startSetup();
+  } catch (err) { fail("err-invite", err.message); }
+  finally { busy(form, false); }
+});
 
 async function resume() {
   // Already part-way signed in (password done)? Carry on from the right step.
@@ -60,4 +91,4 @@ for (const [formId, inputId, errId] of [["step-setup", "setup-code", "err-setup"
   });
 }
 
-resume();
+if (inviteToken) startInvite(); else resume();

@@ -32,6 +32,18 @@
       <button class="btn primary" type="submit">Continue</button>
     </form>
 
+    <!-- step 1 (from an invite link): create the account -->
+    <form class="card form" id="step-invite" novalidate hidden>
+      <h1 class="h2">Create your account</h1>
+      <p class="muted small">You've been invited to Curve Hub. Choose your name and a password, then set up two-step sign-in.</p>
+      <label class="field"><span>Email</span><input class="input" id="invite-email" type="email" autocomplete="username" readonly></label>
+      <label class="field"><span>Your name</span><input class="input" id="invite-name" autocomplete="name" maxlength="80" required></label>
+      <label class="field"><span>Password</span><input class="input" id="invite-password" type="password" autocomplete="new-password" minlength="12" required><small class="muted">At least 12 characters. A short sentence works well.</small></label>
+      <label class="field"><span>Password again</span><input class="input" id="invite-password2" type="password" autocomplete="new-password" required></label>
+      <p class="err" id="err-invite" role="alert" hidden></p>
+      <button class="btn primary" type="submit">Create account</button>
+    </form>
+
     <!-- step 2a: first sign-in, set up the authenticator app -->
     <form class="card form" id="step-setup" novalidate hidden>
       <h1 class="h2">Set up two-step sign-in</h1>

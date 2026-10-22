@@ -3,8 +3,8 @@ import type { Module } from "../types";
 import type { Ctx } from "../../lib/router";
 import { userOf } from "../../lib/router";
 import { audit } from "../../lib/audit";
-import { decrypt, encrypt, hashPassword, newTotpSecret, otpauthUri, verifyPassword, verifyTotp } from "../../lib/crypto";
-import { first, now, run } from "../../lib/db";
+import { decrypt, encrypt, hashPassword, newTotpSecret, otpauthUri, sha256Hex, verifyPassword, verifyTotp } from "../../lib/crypto";
+import { first, newId, now, run } from "../../lib/db";
 import { HttpError, badRequest, clientIp, conflict, forbidden, json, unauthorized } from "../../lib/http";
 import { guard, record } from "../../lib/ratelimit";
 import { clearCookie, createSession } from "../../lib/session";
@@ -33,6 +33,49 @@ async function login(ctx: Ctx) {
   const { cookie } = await createSession(env, user.id, req);
   await audit(env, user.id, "auth.password_ok", "user", user.id, { ip });
   return json({ next: user.totp_enabled ? "totp" : "setup" }, 200, { "set-cookie": cookie });
+}
+
+// ---------- invites: one-time links that let a new owner choose their own password ----------
+interface InviteRow { token_hash: string; email: string; expires_at: string; used_at: string | null }
+
+function sameOrigin(ctx: Ctx) {
+  const origin = ctx.req.headers.get("origin");
+  if (origin && origin !== ctx.env.APP_ORIGIN && origin !== new URL(ctx.req.url).origin) throw forbidden();
+}
+
+async function openInvite(ctx: Ctx, token: string): Promise<InviteRow> {
+  const ip = clientIp(ctx.req);
+  await guard(ctx.env, "invite_ip", ip, 10, 15, true);
+  await record(ctx.env, "invite_ip", ip, true);
+  const invite = /^[0-9a-f]{64}$/.test(token)
+    ? await first<InviteRow>(ctx.env, "SELECT * FROM invites WHERE token_hash = ?", await sha256Hex(token))
+    : null;
+  if (!invite || invite.used_at || invite.expires_at < now()) throw unauthorized("This invite link has expired or was already used. Ask for a new one.");
+  return invite;
+}
+
+async function inviteCheck(ctx: Ctx) {
+  sameOrigin(ctx);
+  const { token } = parse(await ctx.body(), { token: str({ max: 100 }) });
+  const invite = await openInvite(ctx, token);
+  return json({ email: invite.email });
+}
+
+async function inviteAccept(ctx: Ctx) {
+  sameOrigin(ctx);
+  const { env, req } = ctx;
+  const input = parse(await ctx.body(), { token: str({ max: 100 }), name: str({ min: 1, max: 80 }), password: str({ min: 12, max: 200 }) });
+  const invite = await openInvite(ctx, input.token);
+  if (await first(env, "SELECT id FROM users WHERE email = ?", invite.email)) throw conflict("An account with this email already exists. Sign in instead.");
+  // Claim the invite before creating the user, so the same link can't be used twice at once.
+  const claimed = await run(env, "UPDATE invites SET used_at = ? WHERE token_hash = ? AND used_at IS NULL", now(), invite.token_hash);
+  if (!claimed.meta.changes) throw unauthorized("This invite link has expired or was already used. Ask for a new one.");
+  const id = newId("usr"), t = now();
+  await run(env, "INSERT INTO users (id, email, name, password_hash, totp_enabled, created_at, updated_at) VALUES (?, ?, ?, ?, 0, ?, ?)",
+    id, invite.email.toLowerCase(), input.name.trim(), await hashPassword(input.password), t, t);
+  await audit(env, id, "auth.invite_accepted", "user", id, { ip: clientIp(req) });
+  const { cookie } = await createSession(env, id, req);
+  return json({ next: "setup" }, 200, { "set-cookie": cookie });
 }
 
 async function totpSetup(ctx: Ctx) {
@@ -110,6 +153,8 @@ const auth: Module = {
   name: "auth",
   register(r) {
     r.post("/api/auth/login", login, "public");
+    r.post("/api/auth/invite/check", inviteCheck, "public");
+    r.post("/api/auth/invite", inviteAccept, "public");
     r.get("/api/auth/totp/setup", totpSetup, "pending");
     r.post("/api/auth/totp", totpVerify, "pending");
     r.get("/api/auth/me", me, "pending");
