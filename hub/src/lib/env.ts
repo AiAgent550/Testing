@@ -8,6 +8,10 @@ export interface Env {
   SITE_ORIGIN: string;
   BUSINESS_NAME: string;
 
+  /** Cloudflare Email Routing send_email binding; delivers only to STAFF_ALERT_TO (a verified address). */
+  STAFF_MAIL?: SendEmail;
+  STAFF_ALERT_TO?: string;
+
   ENCRYPTION_KEY?: string;
   ANTHROPIC_API_KEY?: string;
   DVLA_API_KEY?: string;

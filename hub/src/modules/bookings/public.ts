@@ -8,6 +8,8 @@ import { guard, record } from "../../lib/ratelimit";
 import { email, isoDate, oneOf, optional, parse, reg, str, ukPhone } from "../../lib/validate";
 import { lookupVehicle } from "../vehicles/service";
 import { createBooking } from "./service";
+import { sendStaffAlert } from "../notifications/alerts";
+import { SERVICE_LABELS } from "../jobs/service";
 import { ukToday } from "./status";
 
 export function corsHeaders(origin: string): Record<string, string> {
@@ -90,6 +92,17 @@ export const publicBooking: Handler = sitePublic(async ctx => {
     address: input.address ?? null,
     source: "website",
   }, null);
+  await sendStaffAlert(env, {
+    kind: "BOOKING",
+    subject: [booking.ref, input.name, SERVICE_LABELS[input.service], input.reg ?? null],
+    lines: [
+      ["Reference", booking.ref], ["Name", input.name], ["Phone", input.phone], ["Email", input.email ?? null],
+      ["Service", SERVICE_LABELS[input.service]], ["Registration", input.reg ?? null], ["Preferred date", input.preferred_date ?? null],
+      ["Where", location === "mobile" ? `Mobile visit: ${input.address}` : "At the workshop"], ["Details", input.description ?? null],
+    ],
+    link: `${env.APP_ORIGIN}/app/#/bookings/${booking.id}`,
+    replyTo: input.email ?? null,
+  });
   return json({ ref: booking.ref });
 });
 

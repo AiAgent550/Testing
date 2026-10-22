@@ -11,6 +11,7 @@ import { ukPhone } from "../../lib/validate";
 import { aiAvailable, structured } from "../ai/client";
 import { getSetting } from "../system";
 import { queueMessage } from "../notifications";
+import { sendStaffAlert } from "../notifications/alerts";
 import type { CommentRow } from "../social/types";
 import { heuristicTriage, isNoise, type Triage } from "./heuristics";
 
@@ -131,6 +132,15 @@ export async function triageComment(env: Env, c: Pick<CommentRow, "body" | "plat
 }
 
 async function notifyOwner(env: Env, leadId: string, c: CommentRow, t: Triage): Promise<void> {
+  await sendStaffAlert(env, {
+    kind: "LEAD",
+    subject: [`@${String(c.author_handle || "someone").replace(/^@/, "")}`, c.platform, t.summary],
+    lines: [
+      ["From", `@${String(c.author_handle || "someone").replace(/^@/, "")} on ${c.platform}`], ["Summary", t.summary],
+      ["Service", t.service], ["Urgency", t.urgency], ["Score", String(t.score)], ["Comment", c.body.slice(0, 500)],
+    ],
+    link: `${env.APP_ORIGIN}/app/#/leads`,
+  });
   const business = await getSetting<{ phone?: string }>(env, "business");
   if (!business?.phone) return;
   let to: string;

@@ -23,6 +23,11 @@ migrations_dir = "migrations"
 binding = "FILES"
 bucket_name = "curve-hub-files"
 
+# Staff alerts ("[BOOKING] CP-1001 ...") via Cloudflare Email Routing; it only delivers to this verified address.
+[[send_email]]
+name = "STAFF_MAIL"
+destination_address = "mkautoserviceslimited@gmail.com"
+
 [triggers]
 crons = ["*/10 * * * *"]          # comment watcher and outbox sender
 
@@ -32,6 +37,7 @@ crons = ["*/10 * * * *"]          # comment watcher and outbox sender
 APP_ORIGIN = "https://hub.curveperformance.co.uk"
 SITE_ORIGIN = "https://curveperformance.co.uk"
 BUSINESS_NAME = "Curve Performance"
+STAFF_ALERT_TO = "mkautoserviceslimited@gmail.com"
 
 # Secrets (never in this file). Set with `wrangler secret put NAME`, or .dev.vars locally:
 #   ENCRYPTION_KEY      32 random bytes, base64 (encrypts 2FA secrets and platform tokens)
