@@ -21,47 +21,51 @@
       <svg viewBox="0 0 300 80" aria-hidden="true"><defs><linearGradient id="cg-auth" x1="0" x2="1"><stop offset="0" stop-color="#6c7783"/><stop offset=".6" stop-color="#e9eef4"/><stop offset="1" stop-color="#fff"/></linearGradient></defs><path d="M0 74 C50 72 90 66 130 54 C170 42 200 36 240 34 C265 33 285 36 300 40" fill="none" stroke="#56606b" stroke-width="3"/><path d="M0 74 C45 71 80 60 120 42 C160 24 195 12 235 10 C262 9 284 14 300 20" fill="none" stroke="url(#cg-auth)" stroke-width="6" stroke-linecap="round"/></svg>
       <span class="chrome"><b>CURVE</b> HUB</span>
     </div>
-    <p class="kicker tag">Curve Performance · Workshop</p>
+    <p class="kicker tag" data-i18n="Curve Performance · Workshop">Curve Performance · Workshop</p>
+    <div class="seg lang-switch" role="group" aria-label="Language / Język">
+      <button type="button" data-lang="en" aria-pressed="true">EN</button>
+      <button type="button" data-lang="pl" aria-pressed="false">PL</button>
+    </div>
 
     <!-- step 1: password -->
     <form class="card form" id="step-password" novalidate>
-      <h1 class="h2">Sign in</h1>
-      <label class="field"><span>Email</span><input class="input" id="email" type="email" autocomplete="username" required></label>
-      <label class="field"><span>Password</span><input class="input" id="password" type="password" autocomplete="current-password" required></label>
+      <h1 class="h2" data-i18n="Sign in">Sign in</h1>
+      <label class="field"><span data-i18n="Email">Email</span><input class="input" id="email" type="email" autocomplete="username" required></label>
+      <label class="field"><span data-i18n="Password">Password</span><input class="input" id="password" type="password" autocomplete="current-password" required></label>
       <p class="err" id="err-password" role="alert" hidden></p>
-      <button class="btn primary" type="submit">Continue</button>
+      <button class="btn primary" type="submit" data-i18n="Continue">Continue</button>
     </form>
 
     <!-- step 1 (from an invite link): create the account -->
     <form class="card form" id="step-invite" novalidate hidden>
-      <h1 class="h2">Create your account</h1>
-      <p class="muted small">You've been invited to Curve Hub. Choose your name and a password, then set up two-step sign-in.</p>
-      <label class="field"><span>Email</span><input class="input" id="invite-email" type="email" autocomplete="username" readonly></label>
-      <label class="field"><span>Your name</span><input class="input" id="invite-name" autocomplete="name" maxlength="80" required></label>
-      <label class="field"><span>Password</span><input class="input" id="invite-password" type="password" autocomplete="new-password" minlength="12" required><small class="muted">At least 12 characters. A short sentence works well.</small></label>
-      <label class="field"><span>Password again</span><input class="input" id="invite-password2" type="password" autocomplete="new-password" required></label>
+      <h1 class="h2" data-i18n="Create your account">Create your account</h1>
+      <p class="muted small" data-i18n="You've been invited to Curve Hub. Choose your name and a password, then set up two-step sign-in.">You've been invited to Curve Hub. Choose your name and a password, then set up two-step sign-in.</p>
+      <label class="field"><span data-i18n="Email">Email</span><input class="input" id="invite-email" type="email" autocomplete="username" readonly></label>
+      <label class="field"><span data-i18n="Your name">Your name</span><input class="input" id="invite-name" autocomplete="name" maxlength="80" required></label>
+      <label class="field"><span data-i18n="Password">Password</span><input class="input" id="invite-password" type="password" autocomplete="new-password" minlength="12" required><small class="muted" data-i18n="At least 12 characters. A short sentence works well.">At least 12 characters. A short sentence works well.</small></label>
+      <label class="field"><span data-i18n="Password again">Password again</span><input class="input" id="invite-password2" type="password" autocomplete="new-password" required></label>
       <p class="err" id="err-invite" role="alert" hidden></p>
-      <button class="btn primary" type="submit">Create account</button>
+      <button class="btn primary" type="submit" data-i18n="Create account">Create account</button>
     </form>
 
     <!-- step 2a: first sign-in, set up the authenticator app -->
     <form class="card form" id="step-setup" novalidate hidden>
-      <h1 class="h2">Set up two-step sign-in</h1>
-      <p class="muted small">Open an authenticator app (Google Authenticator, Microsoft Authenticator or 1Password), add an account with a setup key, and enter this key:</p>
+      <h1 class="h2" data-i18n="Set up two-step sign-in">Set up two-step sign-in</h1>
+      <p class="muted small" data-i18n="Open an authenticator app (Google Authenticator, Microsoft Authenticator or 1Password), add an account with a setup key, and enter this key:">Open an authenticator app (Google Authenticator, Microsoft Authenticator or 1Password), add an account with a setup key, and enter this key:</p>
       <div class="secret" id="secret"></div>
-      <a class="btn small" id="otpauth" href="#">Open in authenticator app</a>
-      <label class="field"><span>Then enter the 6-digit code it shows</span><input class="input code-input" id="setup-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required></label>
+      <a class="btn small" id="otpauth" href="#" data-i18n="Open in authenticator app">Open in authenticator app</a>
+      <label class="field"><span data-i18n="Then enter the 6-digit code it shows">Then enter the 6-digit code it shows</span><input class="input code-input" id="setup-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required></label>
       <p class="err" id="err-setup" role="alert" hidden></p>
-      <button class="btn primary" type="submit">Turn on and sign in</button>
+      <button class="btn primary" type="submit" data-i18n="Turn on and sign in">Turn on and sign in</button>
     </form>
 
     <!-- step 2b: returning user -->
     <form class="card form" id="step-totp" novalidate hidden>
-      <h1 class="h2">Enter your code</h1>
-      <p class="muted small">Open your authenticator app and type the current 6-digit code for Curve Hub.</p>
-      <label class="field"><span>Code</span><input class="input code-input" id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required></label>
+      <h1 class="h2" data-i18n="Enter your code">Enter your code</h1>
+      <p class="muted small" data-i18n="Open your authenticator app and type the current 6-digit code for Curve Hub.">Open your authenticator app and type the current 6-digit code for Curve Hub.</p>
+      <label class="field"><span data-i18n="Code">Code</span><input class="input code-input" id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required></label>
       <p class="err" id="err-totp" role="alert" hidden></p>
-      <button class="btn primary" type="submit">Sign in</button>
+      <button class="btn primary" type="submit" data-i18n="Sign in">Sign in</button>
     </form>
   </div>
 </main>

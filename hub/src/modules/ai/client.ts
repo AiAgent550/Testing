@@ -8,10 +8,12 @@ import type { Env } from "../../lib/env";
  * Model per job, chosen for cost: the cheapest model that does each job well.
  *   triage       - sorting public comments into leads: Claude Haiku 5.5 (simple classification)
  *   suggestions  - workshop tool suggestions: Claude Sonnet 5.5 (needs real technical judgement)
+ *   translate    - translating customer and staff text between English and Polish: Claude Haiku 5.5
  */
 export const AI_MODELS = {
   triage: "claude-haiku-5-5",
   suggestions: "claude-sonnet-5-5",
+  translate: "claude-haiku-5-5",
 } as const;
 export type AiTask = keyof typeof AI_MODELS;
 

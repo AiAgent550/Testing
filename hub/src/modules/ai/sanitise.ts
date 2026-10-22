@@ -11,10 +11,12 @@ const clip = (s: string, n = 600) => {
 const list = (xs: string[], n = 600) => xs.map(x => clip(x, n)).filter(Boolean).slice(0, MAX_ITEMS);
 
 export const BACKUP_CAUTION = "Back up the original data (full read, saved and labelled) before any write, coding or adaptation.";
-const mentionsBackup = (xs: string[]) => xs.some(x => /back\s?-?up|original (file|data|dump)|save (the )?(original|full) (read|dump)/i.test(x));
+export const BACKUP_CAUTION_PL = "Przed każdym zapisem, kodowaniem lub adaptacją zrób kopię zapasową oryginalnych danych (pełny odczyt, zapisany i opisany).";
+const mentionsBackup = (xs: string[]) => xs.some(x =>
+  /back\s?-?up|original (file|data|dump)|save (the )?(original|full) (read|dump)/i.test(x) || /kopi\S*\s+zapasow|backup|oryginaln\S*\s+(plik|dan|odczyt)/i.test(x));
 
 /** Returns a clean suggestion, or null if `raw` doesn't match the schema. Unknown or unavailable tools are dropped. */
-export function sanitiseSuggestion(raw: unknown, ctx: { make?: string | null } = {}): Suggestion | null {
+export function sanitiseSuggestion(raw: unknown, ctx: { make?: string | null; lang?: "en" | "pl" } = {}): Suggestion | null {
   const parsed = SuggestionSchema.safeParse(raw);
   if (!parsed.success) return null;
   const s = parsed.data;
@@ -34,7 +36,7 @@ export function sanitiseSuggestion(raw: unknown, ctx: { make?: string | null } =
 
   const steps = list(s.steps);
   const cautions = list(s.cautions);
-  if (!mentionsBackup(steps) && !mentionsBackup(cautions)) cautions.unshift(BACKUP_CAUTION);
+  if (!mentionsBackup(steps) && !mentionsBackup(cautions)) cautions.unshift(ctx.lang === "pl" ? BACKUP_CAUTION_PL : BACKUP_CAUTION);
 
   return {
     summary: clip(s.summary, 1200),

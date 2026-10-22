@@ -3,6 +3,8 @@
 import { comingSoonFor } from "./knowledge";
 import { sanitiseSuggestion } from "./sanitise";
 import type { Suggestion } from "./schema";
+import type { Lang } from "../../lib/env";
+import { RULES_PL } from "./rules-pl";
 
 export interface RulesInput {
   make?: string | null;
@@ -279,6 +281,18 @@ const DEFAULT_PIECE: Piece = {
   more: ["Fault codes", "Symptoms and when they happen", "Any recent work on the car"],
 };
 
+/** Every fixed string a rules suggestion can contain (for translation coverage tests). */
+export function RULE_STRINGS(): Set<string> {
+  const out = new Set<string>();
+  const add = (p: Piece) => {
+    [p.label, ...p.causes, ...p.steps, ...p.cautions, ...p.more].forEach(x => out.add(x));
+    p.tools.forEach(t => { out.add(t.function); out.add(t.why); });
+  };
+  for (const r of RULES) for (const mercedes of [true, false]) add(r.build({ mercedes }));
+  add(DEFAULT_PIECE);
+  return out;
+}
+
 const uniq = (xs: string[]) => [...new Set(xs.map(x => x.trim()).filter(Boolean))];
 
 /** Which rules match, by id (exported for tests). */
@@ -289,7 +303,21 @@ export function matchRules(input: RulesInput): string[] {
   return ids.includes("akl") ? ids.filter(id => id !== "keys") : ids;
 }
 
-export function rulesSuggestion(input: RulesInput): Suggestion {
+/** Translates the fixed rule text into Polish (unknown strings, e.g. tool names, stay as they are). */
+function localisePl(s: Suggestion): Suggestion {
+  const tr = (x: string) => RULES_PL[x] ?? x;
+  return {
+    ...s,
+    likely_causes: s.likely_causes.map(tr),
+    recommended_tools: s.recommended_tools.map(t => ({ ...t, function: tr(t.function), why: tr(t.why) })),
+    steps: s.steps.map(tr),
+    cautions: s.cautions.map(tr),
+    needs_more_info: s.needs_more_info.map(tr),
+  };
+}
+
+export function rulesSuggestion(input: RulesInput, lang: Lang = "en"): Suggestion {
+  const pl = lang === "pl";
   const mercedes = /mercedes|\bamg\b|\bsmart\b/i.test(input.make || "");
   const ctx: Ctx = { mercedes };
   const ids = matchRules(input).slice(0, 3);
@@ -300,15 +328,21 @@ export function rulesSuggestion(input: RulesInput): Suggestion {
   const cautions = pieces.flatMap(p => p.cautions);
   const more = pieces.flatMap(p => p.more);
   if (soon && moduleWork) {
-    cautions.unshift(`${soon.name} isn't available yet, so dealer-level work on this make may need to wait for the licence or be referred to another specialist.`);
+    cautions.unshift(pl
+      ? `${soon.name} nie jest jeszcze dostępny, więc prace na poziomie ASO przy tej marce mogą poczekać na licencję albo trzeba je zlecić innemu specjaliście.`
+      : `${soon.name} isn't available yet, so dealer-level work on this make may need to wait for the licence or be referred to another specialist.`);
     more.push("Check whether the job can be done with the tools available now before booking it in");
   }
 
   const car = [input.make, input.model].filter(Boolean).join(" ");
-  const labels = pieces.map(p => p.label);
-  const summary = ids.length
-    ? `Looks like ${labels.join(", ")} work${car ? ` on a ${car}` : ""}. A starting point from the workshop's rules; check the car before acting.`
-    : `Not enough detail to match a known job type${car ? ` for this ${car}` : ""}. Start with a full scan and add what you find to the notes.`;
+  const labels = pieces.map(p => (pl ? RULES_PL[p.label] ?? p.label : p.label));
+  const summary = pl
+    ? ids.length
+      ? `Wygląda na: ${labels.join(", ")}${car ? ` (${car})` : ""}. To punkt wyjścia z reguł warsztatu; sprawdź auto, zanim coś zrobisz.`
+      : `Za mało szczegółów, żeby dopasować znany rodzaj pracy${car ? ` (${car})` : ""}. Zacznij od pełnego skanu i dopisz ustalenia do notatek.`
+    : ids.length
+      ? `Looks like ${labels.join(", ")} work${car ? ` on a ${car}` : ""}. A starting point from the workshop's rules; check the car before acting.`
+      : `Not enough detail to match a known job type${car ? ` for this ${car}` : ""}. Start with a full scan and add what you find to the notes.`;
 
   const raw: Suggestion = {
     summary,
@@ -320,5 +354,6 @@ export function rulesSuggestion(input: RulesInput): Suggestion {
     needs_more_info: uniq(more),
   };
   // Same checks as AI output: unknown tools dropped, backup reminder guaranteed.
-  return sanitiseSuggestion(raw, { make: input.make }) ?? raw;
+  const clean = sanitiseSuggestion(raw, { make: input.make }) ?? raw;
+  return pl ? localisePl(clean) : clean;
 }

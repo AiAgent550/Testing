@@ -1,7 +1,8 @@
 // Dashboard shell: navigation, hash routing (#/page/arg), and handing the view to page modules.
 // Each page module exports `render(view, { params, navigate })` and may return a cleanup function.
 import { PAGES } from "./pages/index.js";
-import { api, h, icon, loading, toast } from "./core.js";
+import { api, h, icon, loading, t, toast } from "./core.js";
+import { setLang } from "/assets/i18n.js";
 
 const view = document.getElementById("view");
 let cleanup = null, counts = {};
@@ -9,8 +10,8 @@ let cleanup = null, counts = {};
 function navItems(compact) {
   const items = compact ? PAGES.filter(p => p.tab) : PAGES;
   const out = items.map(p => h("a.nav-item", { href: `#/${p.id}`, dataset: { page: p.id } },
-    icon(p.icon), h("span", p.label), p.badge && counts[p.badge] ? h("span.badge", String(counts[p.badge])) : null));
-  if (compact) out.push(h("a.nav-item", { href: "#/more", dataset: { page: "more" } }, icon("more"), h("span", "More")));
+    icon(p.icon), h("span", t(p.label)), p.badge && counts[p.badge] ? h("span.badge", String(counts[p.badge])) : null));
+  if (compact) out.push(h("a.nav-item", { href: "#/more", dataset: { page: "more" } }, icon("more"), h("span", t("More"))));
   return out;
 }
 
@@ -21,7 +22,7 @@ function drawNav() {
   brand.querySelector("linearGradient").id = "cg-rail";
   brand.querySelectorAll("[stroke^='url(']").forEach(p => p.setAttribute("stroke", "url(#cg-rail)"));
   rail.replaceChildren(brand, ...navItems(false), h("div.grow"),
-    h("button.nav-item", { type: "button", onclick: signOut, style: "border:0;background:none;cursor:pointer" }, icon("logout"), h("span", "Sign out")));
+    h("button.nav-item", { type: "button", onclick: signOut, style: "border:0;background:none;cursor:pointer" }, icon("logout"), h("span", t("Sign out"))));
   tabbar.replaceChildren(...navItems(true));
   markCurrent();
 }
@@ -40,9 +41,9 @@ async function signOut() {
 
 function renderMore() {
   view.replaceChildren(
-    h("div.page-head", h("div", h("p.kicker", "Curve Hub"), h("h1.h1.chrome", "More"))),
-    h("div.list", PAGES.filter(p => !p.tab).map(p => h("a.row", { href: `#/${p.id}` }, h("span.title", p.label), icon("back", "flip")))),
-    h("div", { style: "margin-top:20px" }, h("button.btn", { type: "button", onclick: signOut }, icon("logout"), "Sign out")),
+    h("div.page-head", h("div", h("p.kicker", "Curve Hub"), h("h1.h1.chrome", t("More")))),
+    h("div.list", PAGES.filter(p => !p.tab).map(p => h("a.row", { href: `#/${p.id}` }, h("span.title", t(p.label)), icon("back", "flip")))),
+    h("div", { style: "margin-top:20px" }, h("button.btn", { type: "button", onclick: signOut }, icon("logout"), t("Sign out"))),
   );
 }
 
@@ -51,10 +52,10 @@ async function route() {
   const [id = "today", ...params] = location.hash.slice(2).split("/").filter(Boolean);
   markCurrent();
   window.scrollTo(0, 0);
-  if (id === "more") return renderMore();
+  if (id === "more") { document.title = `${t("More")} · Curve Hub`; return renderMore(); }
   const page = PAGES.find(p => p.id === id);
   if (!page) { location.hash = "#/today"; return; }
-  document.title = `${page.label} · Curve Hub`;
+  document.title = `${t(page.label)} · Curve Hub`;
   view.replaceChildren(loading());
   try {
     const mod = await page.load();
@@ -62,7 +63,7 @@ async function route() {
     if (typeof result === "function") cleanup = result;
   } catch (err) {
     console.error(err);
-    view.replaceChildren(h("div.empty", h("p", { style: "margin:0" }, err.message || "This page couldn't load.")));
+    view.replaceChildren(h("div.empty", h("p", { style: "margin:0" }, err.message || t("This page couldn't load."))));
   }
   view.focus({ preventScroll: true });
 }
@@ -74,7 +75,10 @@ async function refreshCounts() {
 async function boot() {
   try {
     const me = await api("/api/auth/me");
+    setLang(me.lang);
     document.getElementById("who").textContent = me.user.name;
+    for (const nav of document.querySelectorAll("nav[aria-label]")) nav.setAttribute("aria-label", t("Sections"));
+    document.querySelector(".topbar .brand")?.setAttribute("aria-label", t("Curve Hub, today"));
   } catch { return; }
   drawNav();
   refreshCounts();

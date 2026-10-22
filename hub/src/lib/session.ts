@@ -46,7 +46,7 @@ export async function loadSession(env: Env, req: Request): Promise<{ session: Se
   const idHash = await sha256Hex(token);
   const row = await first<Session & User & { last_seen_at: string }>(
     env,
-    `SELECT s.id_hash, s.user_id, s.mfa_ok, s.expires_at, s.last_seen_at, u.id, u.email, u.name, u.totp_enabled
+    `SELECT s.id_hash, s.user_id, s.mfa_ok, s.expires_at, s.last_seen_at, u.id, u.email, u.name, u.totp_enabled, u.lang
        FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.id_hash = ?`,
     idHash,
   );
@@ -62,6 +62,6 @@ export async function loadSession(env: Env, req: Request): Promise<{ session: Se
   }
   return {
     session: { id_hash: row.id_hash, user_id: row.user_id, mfa_ok: row.mfa_ok, expires_at: row.expires_at },
-    user: { id: row.id, email: row.email, name: row.name, totp_enabled: row.totp_enabled },
+    user: { id: row.id, email: row.email, name: row.name, totp_enabled: row.totp_enabled, lang: row.lang === "pl" ? "pl" : "en" },
   };
 }

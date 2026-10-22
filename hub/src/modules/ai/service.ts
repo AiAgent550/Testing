@@ -1,11 +1,11 @@
 // Job tool suggestions: AI first (when configured), rules otherwise, always checked and stored.
-import type { Env } from "../../lib/env";
+import type { Env, Lang } from "../../lib/env";
 import { audit } from "../../lib/audit";
 import { first, newId, now, run } from "../../lib/db";
 import { notFound } from "../../lib/http";
 import { jobContextForAi } from "../jobs/service";
 import { aiAvailable, structured } from "./client";
-import { buildPrompt, SYSTEM_PROMPT } from "./prompt";
+import { buildPrompt, POLISH_INSTRUCTION, SYSTEM_PROMPT } from "./prompt";
 import { rulesSuggestion } from "./rules";
 import { sanitiseSuggestion } from "./sanitise";
 import { SUGGESTION_JSON_SCHEMA, SuggestionSchema, type Suggestion } from "./schema";
@@ -32,7 +32,7 @@ export async function latestSuggestion(env: Env, jobId: string): Promise<StoredS
   return row ? fromRow(row) : null;
 }
 
-export async function suggestForJob(env: Env, jobId: string, actorId: string): Promise<{ suggestion: StoredSuggestion; source: SuggestionSource }> {
+export async function suggestForJob(env: Env, jobId: string, actorId: string, lang: Lang = "en"): Promise<{ suggestion: StoredSuggestion; source: SuggestionSource }> {
   const ctx = await jobContextForAi(env, jobId);
   if (!ctx) throw notFound("Job");
   const make = ctx.vehicle?.make ?? null;
@@ -42,7 +42,7 @@ export async function suggestForJob(env: Env, jobId: string, actorId: string): P
   if (aiAvailable(env)) {
     const result = await structured(env, {
       task: "suggestions",
-      system: SYSTEM_PROMPT,
+      system: lang === "pl" ? SYSTEM_PROMPT + POLISH_INSTRUCTION : SYSTEM_PROMPT,
       prompt: buildPrompt({ vehicle: ctx.vehicle, job: { title: ctx.job.title, description: ctx.job.description, mileage: ctx.job.mileage }, notes: ctx.notes }),
       schema: SuggestionSchema,
       jsonSchema: SUGGESTION_JSON_SCHEMA,
@@ -50,7 +50,7 @@ export async function suggestForJob(env: Env, jobId: string, actorId: string): P
       maxTokens: 12000,
     });
     if (result) {
-      data = sanitiseSuggestion(result.data, { make });
+      data = sanitiseSuggestion(result.data, { make, lang });
       if (data) model = result.model;
     }
   }
@@ -58,7 +58,7 @@ export async function suggestForJob(env: Env, jobId: string, actorId: string): P
     data = rulesSuggestion({
       make, model: ctx.vehicle?.model, fuel_type: ctx.vehicle?.fuel_type,
       title: ctx.job.title, description: ctx.job.description, notes: ctx.notes,
-    });
+    }, lang);
     model = "rules";
   }
 
@@ -67,7 +67,7 @@ export async function suggestForJob(env: Env, jobId: string, actorId: string): P
   await run(env, "INSERT INTO ai_suggestions (id, job_id, model, response_json, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?)",
     id, jobId, model, JSON.stringify(data), actorId, t);
   const source: SuggestionSource = model === "rules" ? "rules" : "ai";
-  await audit(env, actorId, "ai.suggest", "job", jobId, { suggestion_id: id, source });
+  await audit(env, actorId, "ai.suggest", "job", jobId, { suggestion_id: id, source, lang });
   return { suggestion: { ...data, id, job_id: jobId, model, source, feedback: null, created_at: t }, source };
 }
 

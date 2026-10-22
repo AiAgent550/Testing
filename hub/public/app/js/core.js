@@ -11,13 +11,16 @@ for (const name of ["append", "prepend", "replaceChildren"]) {
   };
 }
 
+import { N_, getLang, locale, t, tServer, tn } from "/assets/i18n.js";
+export { N_, getLang, locale, t, tn };
+
 // ---------- API ----------
 export class ApiError extends Error {
   constructor(status, body) {
-    super(body?.error?.message || `Request failed (${status}).`);
+    super(body?.error?.message ? tServer(body.error.message) : t("Request failed ({status}).", { status }));
     this.status = status;
     this.code = body?.error?.code;
-    this.fields = body?.error?.fields || {};
+    this.fields = Object.fromEntries(Object.entries(body?.error?.fields || {}).map(([k, v]) => [k, tServer(v)]));
   }
 }
 
@@ -91,12 +94,12 @@ export function icon(name, cls = "") {
 // ---------- feedback ----------
 export function toast(message, kind = "") {
   const box = document.getElementById("toasts");
-  const t = h("div.toast", { class: kind }, message);
-  box.append(t);
-  setTimeout(() => t.remove(), 4200);
+  const el = h("div.toast", { class: kind }, message);
+  box.append(el);
+  setTimeout(() => el.remove(), 4200);
 }
 
-export function loading() { return h("div.loading", h("div.spinner", { role: "progressbar", "aria-label": "Loading" })); }
+export function loading() { return h("div.loading", h("div.spinner", { role: "progressbar", "aria-label": t("Loading") })); }
 
 export function empty(text, iconName = "today", action = null) {
   const art = icon(iconName);
@@ -110,8 +113,14 @@ const STATUS_TONE = {
   new: "info", replied: "good", booked: "good", dismissed: "dim",
   queued: "info", sent: "good", failed: "bad", skipped: "dim", published: "good", draft: "dim", partial: "warn",
 };
+// Default chip text for statuses shown without their own label (leads, social posts and targets).
+const CHIP_LABELS = {
+  new: N_("New"), replied: N_("Replied"), booked: N_("Booked"), dismissed: N_("Dismissed"),
+  queued: N_("Queued"), sent: N_("Sent"), failed: N_("Failed"), skipped: N_("Skipped"), published: N_("Published"),
+  draft: N_("Draft"), partial: N_("Partly published"), pending: N_("Pending"), processing: N_("Processing"),
+};
 export function chip(status, label) {
-  return h("span.chip", { class: STATUS_TONE[status] || "" }, label || String(status).replace(/_/g, " "));
+  return h("span.chip", { class: STATUS_TONE[status] || "" }, label || (CHIP_LABELS[status] ? t(CHIP_LABELS[status]) : String(status).replace(/_/g, " ")));
 }
 
 export function plate(reg) { return reg ? h("span.plate", formatReg(reg)) : null; }
@@ -122,27 +131,40 @@ export function formatReg(reg) {
   const r = String(reg || "").toUpperCase().replace(/\s/g, "");
   return /^[A-Z]{2}\d{2}[A-Z]{3}$/.test(r) ? `${r.slice(0, 4)} ${r.slice(4)}` : r;
 }
-const dateFmt = new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short" });
-const timeFmt = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit" });
-export const fmtDate = iso => (iso ? dateFmt.format(new Date(iso)) : "");
-export const fmtTime = iso => (iso ? timeFmt.format(new Date(iso)) : "");
+// Formatters follow the user's language (built on first use, after the language is known).
+const fmts = {};
+const fmt = (key, opts) => (fmts[`${locale()}|${key}`] ??= new Intl.DateTimeFormat(locale(), opts));
+export const fmtDate = iso => (iso ? fmt("date", { weekday: "short", day: "numeric", month: "short" }).format(new Date(iso)) : "");
+export const fmtTime = iso => (iso ? fmt("time", { hour: "2-digit", minute: "2-digit" }).format(new Date(iso)) : "");
 export const fmtDateTime = iso => (iso ? `${fmtDate(iso)}, ${fmtTime(iso)}` : "");
+export const fmtLongDate = d => fmt("long", { weekday: "long", day: "numeric", month: "long" }).format(d);
+export const fmtNumber = n => Number(n).toLocaleString(locale());
+export const fmtMiles = n => tn(Number(n), "{n} mile|{n} miles", { n: fmtNumber(n) });
 export function fmtAgo(iso) {
   if (!iso) return "";
   const s = (Date.now() - Date.parse(iso)) / 1000;
-  if (s < 60) return "just now";
-  if (s < 3600) return `${Math.floor(s / 60)} min ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)} h ago`;
+  if (s < 60) return t("just now");
+  if (s < 3600) return t("{n} min ago", { n: Math.floor(s / 60) });
+  if (s < 86400) return t("{n} h ago", { n: Math.floor(s / 3600) });
   return fmtDate(iso);
 }
 export function fmtPhone(e164) {
   if (!e164) return "";
   return e164.startsWith("+44") ? "0" + e164.slice(3).replace(/(\d{4})(\d{3})(\d+)/, "$1 $2 $3") : e164;
 }
-export const SERVICE_LABELS = {
-  remap: "ECU remap", keys: "Keys and immobiliser", coding: "Coding", modules: "Module work",
-  diagnostics: "Diagnostics", servicing: "Servicing and repairs", other: "Other",
+const SERVICE_EN = {
+  remap: N_("ECU remap"), keys: N_("Keys and immobiliser"), coding: N_("Coding"), modules: N_("Module work"),
+  diagnostics: N_("Diagnostics"), servicing: N_("Servicing and repairs"), other: N_("Other"),
 };
+/** Service names in the user's language (looked up on read, so the language can be set after import). */
+export const SERVICE_LABELS = new Proxy(SERVICE_EN, { get: (o, k) => (typeof o[k] === "string" ? t(o[k]) : o[k]) });
+
+/** Job titles the Hub writes itself ("Keys and immobiliser · AB12 CDE") are stored in English;
+ *  show the service part in the reader's language. Titles people typed are shown as written. */
+export function jobTitle(title) {
+  const [first, ...rest] = String(title || "").split(" · ");
+  return Object.values(SERVICE_EN).includes(first) ? [t(first), ...rest].join(" · ") : title;
+}
 
 // ---------- forms ----------
 export function field(label, input, hint) {
@@ -184,7 +206,7 @@ export function sheet(title, content, actions = []) {
   const prev = document.activeElement;
   const backdrop = h("div.sheet-backdrop");
   const panel = h("div.sheet", { role: "dialog", "aria-modal": "true", "aria-label": title },
-    h("div.sheet-head", h("h2.h2.chrome", title), h("button.btn.small.ghost", { type: "button", onclick: () => close() }, "Close")),
+    h("div.sheet-head", h("h2.h2.chrome", title), h("button.btn.small.ghost", { type: "button", onclick: () => close() }, t("Close"))),
     content,
     actions.length ? h("div.sheet-actions", actions) : null,
   );
@@ -199,4 +221,31 @@ export function sheet(title, content, actions = []) {
 
 export function pageHead(kicker, title, ...actions) {
   return h("div.page-head", h("div", h("p.kicker", kicker), h("h1.h1.chrome", title)), actions.length ? h("div", { style: "display:flex;gap:10px;flex-wrap:wrap" }, actions) : null);
+}
+
+// ---------- translation of free text ----------
+/** Free text written by customers or staff, with a "Translate" button that shows an AI translation
+ *  underneath. The original is never changed. `source` is what gets translated when it differs from
+ *  what is shown (e.g. a lead's summary plus the comment it came from). */
+export function translatable(shown, style = "margin:0;white-space:pre-wrap;overflow-wrap:anywhere", source = shown) {
+  const original = h("p", { style }, shown);
+  const text = source;
+  if (!text || !String(text).trim()) return original;
+  const result = h("div", { hidden: true, style: "display:grid;gap:4px;padding:8px 12px;border-left:2px solid var(--line-strong);border-radius:4px;background:var(--raise)" });
+  const btn = h("button.btn.small.ghost", { type: "button" }, icon("spark"), t("Translate"));
+  btn.addEventListener("click", async () => {
+    btn.disabled = true;
+    btn.replaceChildren(h("span.spinner"), t("Translating…"));
+    try {
+      const { translation } = await api("/api/ai/translate", { method: "POST", body: { text: String(text).slice(0, 4000) } });
+      result.replaceChildren(h("span.muted.small", t("Translation (AI)")), h("p", { style: "margin:0;white-space:pre-wrap;overflow-wrap:anywhere" }, translation));
+      result.hidden = false;
+      btn.remove();
+    } catch (err) {
+      toast(err.message, "bad");
+      btn.disabled = false;
+      btn.replaceChildren(icon("spark"), t("Translate"));
+    }
+  });
+  return h("div.stack", { style: "gap:6px" }, original, h("div", btn), result);
 }

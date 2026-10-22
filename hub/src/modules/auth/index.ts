@@ -8,7 +8,8 @@ import { first, newId, now, run } from "../../lib/db";
 import { HttpError, badRequest, clientIp, conflict, forbidden, json, unauthorized } from "../../lib/http";
 import { guard, record } from "../../lib/ratelimit";
 import { clearCookie, createSession } from "../../lib/session";
-import { email, parse, str } from "../../lib/validate";
+import { email, oneOf, optional, parse, str } from "../../lib/validate";
+import { LANGS } from "../../lib/env";
 
 // A real-looking hash to compare against when the email is unknown, so timing doesn't reveal which emails exist.
 const DUMMY_HASH = "pbkdf2$100000$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
@@ -64,15 +65,15 @@ async function inviteCheck(ctx: Ctx) {
 async function inviteAccept(ctx: Ctx) {
   sameOrigin(ctx);
   const { env, req } = ctx;
-  const input = parse(await ctx.body(), { token: str({ max: 100 }), name: str({ min: 1, max: 80 }), password: str({ min: 12, max: 200 }) });
+  const input = parse(await ctx.body(), { token: str({ max: 100 }), name: str({ min: 1, max: 80 }), password: str({ min: 12, max: 200 }), lang: optional(oneOf(LANGS)) });
   const invite = await openInvite(ctx, input.token);
   if (await first(env, "SELECT id FROM users WHERE email = ?", invite.email)) throw conflict("An account with this email already exists. Sign in instead.");
   // Claim the invite before creating the user, so the same link can't be used twice at once.
   const claimed = await run(env, "UPDATE invites SET used_at = ? WHERE token_hash = ? AND used_at IS NULL", now(), invite.token_hash);
   if (!claimed.meta.changes) throw unauthorized("This invite link has expired or was already used. Ask for a new one.");
   const id = newId("usr"), t = now();
-  await run(env, "INSERT INTO users (id, email, name, password_hash, totp_enabled, created_at, updated_at) VALUES (?, ?, ?, ?, 0, ?, ?)",
-    id, invite.email.toLowerCase(), input.name.trim(), await hashPassword(input.password), t, t);
+  await run(env, "INSERT INTO users (id, email, name, password_hash, totp_enabled, lang, created_at, updated_at) VALUES (?, ?, ?, ?, 0, ?, ?, ?)",
+    id, invite.email.toLowerCase(), input.name.trim(), await hashPassword(input.password), input.lang ?? "en", t, t);
   await audit(env, id, "auth.invite_accepted", "user", id, { ip: clientIp(req) });
   const { cookie } = await createSession(env, id, req);
   return json({ next: "setup" }, 200, { "set-cookie": cookie });
@@ -115,7 +116,17 @@ async function totpVerify(ctx: Ctx) {
 
 async function me(ctx: Ctx) {
   const u = userOf(ctx);
-  return json({ user: { id: u.id, name: u.name, email: u.email }, mfa_ok: !!ctx.session?.mfa_ok, totp_enabled: !!u.totp_enabled });
+  return json({ user: { id: u.id, name: u.name, email: u.email, lang: u.lang }, lang: u.lang, mfa_ok: !!ctx.session?.mfa_ok, totp_enabled: !!u.totp_enabled });
+}
+
+async function setLang(ctx: Ctx) {
+  const u = userOf(ctx);
+  const { lang } = parse(await ctx.body(), { lang: oneOf(LANGS) });
+  if (lang !== u.lang) {
+    await run(ctx.env, "UPDATE users SET lang = ?, updated_at = ? WHERE id = ?", lang, now(), u.id);
+    await audit(ctx.env, u.id, "auth.lang_changed", "user", u.id, { from: u.lang, to: lang });
+  }
+  return json({ lang });
 }
 
 async function logout(ctx: Ctx) {
@@ -161,6 +172,7 @@ const auth: Module = {
     r.post("/api/auth/logout", logout, "pending");
     r.post("/api/auth/logout-everywhere", logoutEverywhere);
     r.post("/api/auth/password", changePassword);
+    r.post("/api/auth/lang", setLang);
     r.get("/api/auth/sessions", listSessions);
   },
 };

@@ -4,6 +4,10 @@
 @font-face { font-family: "Unbounded"; src: url("/assets/fonts/unbounded.woff2") format("woff2"); font-weight: 200 700; font-display: swap; }
 @font-face { font-family: "Manrope"; src: url("/assets/fonts/manrope.woff2") format("woff2"); font-weight: 400 700; font-display: swap; }
 @font-face { font-family: "JetBrains Mono"; src: url("/assets/fonts/jetbrains-mono-500.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+/* Polish letters (ą ć ę ł ń ś ź ż): Latin Extended-A subsets of the same fonts, only downloaded when a page uses them. */
+@font-face { font-family: "Unbounded"; src: url("/assets/fonts/unbounded-ext.woff2") format("woff2"); font-weight: 200 700; font-display: swap; unicode-range: U+0100-017F; }
+@font-face { font-family: "Manrope"; src: url("/assets/fonts/manrope-ext.woff2") format("woff2"); font-weight: 400 700; font-display: swap; unicode-range: U+0100-017F; }
+@font-face { font-family: "JetBrains Mono"; src: url("/assets/fonts/jetbrains-mono-500-ext.woff2") format("woff2"); font-weight: 500; font-display: swap; unicode-range: U+0100-017F; }
 
 :root {
   --night: #050608;        /* page, same as the website */
@@ -271,3 +275,13 @@ button.row { width: 100%; border: 0; background: none; text-align: left; font: i
 .flip { transform: rotate(180deg); }
 .row > svg, .row > span > svg { width: 18px; height: 18px; color: var(--steel); }
 main.view:focus { outline: none; } /* focused for screen readers on navigation, no visible ring */
+
+/* Sign-in language switch (EN | PL) */
+.auth .lang-switch { justify-self: center; margin-top: -14px; }
+.auth .lang-switch button { padding: 0 16px; }
+
+/* Tab bar labels: never run into each other. Polish labels are longer, so they get tighter tracking. */
+.tabbar { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.tabbar .nav-item > span:not(.badge) { max-width: 100%; padding: 0 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[lang="pl"] .tabbar .nav-item { font-size: 8px; letter-spacing: 0; }
+html[lang="pl"] .tabbar .nav-item > span:not(.badge) { padding: 0; }

@@ -29,11 +29,16 @@ export interface Env {
   TIKTOK_CLIENT_SECRET?: string;
 }
 
+export type Lang = "en" | "pl";
+export const LANGS: readonly Lang[] = ["en", "pl"];
+
 export interface User {
   id: string;
   email: string;
   name: string;
   totp_enabled: number;
+  /** Dashboard and AI answer language. */
+  lang: Lang;
 }
 
 export interface Session {

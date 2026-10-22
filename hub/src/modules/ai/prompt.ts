@@ -14,6 +14,10 @@ Rules:
 - If the information is thin, keep confidence low and list what more you need.
 - Write in plain British English, concise, for a technician on a phone in the workshop. No markdown.`;
 
+/** Extra instruction when the technician reads the Hub in Polish. Tool names stay exactly as listed. */
+export const POLISH_INSTRUCTION = `
+Language: the technician reads Polish. Write every text field (summary, causes, functions, reasons, steps, cautions, questions) in natural, correct Polish with proper diacritics, using standard Polish workshop terms (sterownik, kodowanie, programowanie kluczy, immobilizer, kopia zapasowa, przebieg, jazda próbna). Keep the tool names exactly as given in English, and keep part numbers, fault codes and abbreviations (ECU, TCU, EIS, ELV, FBS3, FBS4, OBD, VIN) unchanged.`;
+
 export interface PromptVehicle {
   make?: string | null;
   model?: string | null;

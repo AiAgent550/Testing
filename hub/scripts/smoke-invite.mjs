@@ -40,6 +40,15 @@ const b = invite("new.owner@example.com");
 r = await anon("/api/auth/invite", { method: "POST", body: { token: b.token, name: "Dup", password: "another long passphrase" }, headers: hub });
 check("an invite for an email that already has an account is refused", r.status === 409, r.data);
 
+const pl = invite("polski@example.com");
+r = await anon("/api/auth/invite", { method: "POST", body: { token: pl.token, name: "Kamil", password: "bardzo dlugie haslo 123", lang: "pl" }, headers: hub });
+const plCookie = (r.res.headers.get("set-cookie") || "").split(";")[0];
+r = await anon("/api/auth/me", { headers: { ...hub, cookie: plCookie } });
+check("a language chosen on the invite page is saved to the new account", r.data?.lang === "pl", r.data);
+const bad = invite("bad-lang@example.com");
+r = await anon("/api/auth/invite", { method: "POST", body: { token: bad.token, name: "X", password: "another long passphrase", lang: "xx" }, headers: hub });
+check("an unknown language on the invite is refused", r.status === 400 && !!r.data?.error?.fields?.lang, r.data);
+
 const c = invite("late@example.com");
 sql(`UPDATE invites SET expires_at = '2000-01-01T00:00:00.000Z' WHERE email = 'late@example.com'`);
 r = await anon("/api/auth/invite/check", { method: "POST", body: { token: c.token }, headers: hub });
