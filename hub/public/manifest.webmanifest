@@ -1,6 +1,6 @@
 {
-  "name": "M&K Hub",
-  "short_name": "M&K Hub",
+  "name": "Curve Hub",
+  "short_name": "Curve Hub",
   "start_url": "/app/",
   "scope": "/",
   "display": "standalone",

@@ -1,5 +1,5 @@
 // Creates a Hub user. Usage:
-//   MK_PASSWORD='a long passphrase' node scripts/create-user.mjs --email you@mkautoservices.co.uk --name "Your Name" [--remote]
+//   MK_PASSWORD='a long passphrase' node scripts/create-user.mjs --email you@curveperformance.co.uk --name "Your Name" [--remote]
 // The password is read from MK_PASSWORD so it never appears in shell history or process lists.
 // Two-step verification is set up by the user on first sign-in.
 import { execFileSync } from "node:child_process";

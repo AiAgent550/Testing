@@ -17,7 +17,7 @@ export async function render(view, { params, refreshCounts }) {
   const listBox = h("div.stack");
   const checkBtn = h("button.btn", { type: "button", onclick: checkNow }, icon("spark"), "Check now");
   const seg = segmented(TABS, status, v => { status = v; load(); });
-  view.replaceChildren(pageHead("M&K Hub", "Leads", checkBtn), h("div", { style: "margin-bottom:16px" }, seg.el), listBox);
+  view.replaceChildren(pageHead("Curve Hub", "Leads", checkBtn), h("div", { style: "margin-bottom:16px" }, seg.el), listBox);
 
   async function load() {
     listBox.replaceChildren(loading());

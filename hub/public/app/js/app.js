@@ -37,7 +37,7 @@ async function signOut() {
 
 function renderMore() {
   view.replaceChildren(
-    h("div.page-head", h("div", h("p.kicker", "M&K Hub"), h("h1.h1.chrome", "More"))),
+    h("div.page-head", h("div", h("p.kicker", "Curve Hub"), h("h1.h1.chrome", "More"))),
     h("div.list", PAGES.filter(p => !p.tab).map(p => h("a.row", { href: `#/${p.id}` }, h("span.title", p.label), icon("back", "flip")))),
     h("div", { style: "margin-top:20px" }, h("button.btn", { type: "button", onclick: signOut }, icon("logout"), "Sign out")),
   );
@@ -51,7 +51,7 @@ async function route() {
   if (id === "more") return renderMore();
   const page = PAGES.find(p => p.id === id);
   if (!page) { location.hash = "#/today"; return; }
-  document.title = `${page.label} · M&K Hub`;
+  document.title = `${page.label} · Curve Hub`;
   view.replaceChildren(loading());
   try {
     const mod = await page.load();

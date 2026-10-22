@@ -6,6 +6,9 @@ cd "$(dirname "$0")/.."
 PORT=${PORT:-8787}
 mkdir -p .wrangler
 [ -f .dev.vars ] || printf 'ENCRYPTION_KEY=%s\n' "$(node -e 'console.log(require("crypto").randomBytes(32).toString("base64"))')" > .dev.vars
+# wrangler.toml holds the production origins; the local Hub must run with local ones.
+grep -q '^APP_ORIGIN=' .dev.vars || printf 'APP_ORIGIN=http://localhost:8787\n' >> .dev.vars
+grep -q '^SITE_ORIGIN=' .dev.vars || printf 'SITE_ORIGIN=http://localhost:8765\n' >> .dev.vars
 if fuser "$PORT/tcp" >/dev/null 2>&1; then echo "Port $PORT is busy; stop the other Hub first (fuser -k $PORT/tcp)."; exit 1; fi
 
 DEV=""

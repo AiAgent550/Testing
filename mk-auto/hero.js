@@ -1,4 +1,4 @@
-// M&K hero: a photographic plate lit by a canvas engine.
+// Curve Performance hero: a photographic plate lit by a canvas engine.
 // Sequence: edge outline scans out from the grille, a light sweep reveals the paint,
 // LED strips flicker on, main beams ignite (bloom, anamorphic streak, floor reflections),
 // then the chrome monogram and wordmark draw in above the car.
@@ -337,7 +337,7 @@
     }
   }
 
-  const RUNS = [{ text: "M&K", w: 700 }, { text: " AUTO SERVICES", w: 300 }];
+  const RUNS = [{ text: "CURVE", w: 700 }, { text: " PERFORMANCE", w: 300 }];
   function spaced(g, runs, cx, y, size, family, track, alphaAt) {
     const chars = [];
     for (const r of runs) { g.font = `${r.w} ${size}px ${family}`; for (const ch of r.text) chars.push({ ch, w: r.w, adv: g.measureText(ch).width + size * track }); }

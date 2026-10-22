@@ -1,4 +1,4 @@
--- M&K Hub data model. This file is the contract every module builds against:
+-- Curve Hub data model. This file is the contract every module builds against:
 -- modules own their tables' behaviour, but the shapes live here so they connect cleanly.
 -- Conventions: ids are prefixed text ids (usr_, cus_, veh_, bkg_, job_, ...);
 -- timestamps are ISO-8601 UTC strings; money is integer pence; booleans are 0/1.

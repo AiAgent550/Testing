@@ -10,7 +10,7 @@ import { parse, str } from "../../lib/validate";
 
 /** Business settings the dashboard can edit, with their defaults. */
 export const SETTING_DEFAULTS: Record<string, unknown> = {
-  business: { name: "M&K Auto Services", phone: "", email: "", address: "", instagram: "" },
+  business: { name: "Curve Performance", phone: "", email: "", address: "", instagram: "" },
   hours: { mon: "08:00-18:00", tue: "08:00-18:00", wed: "08:00-18:00", thu: "08:00-18:00", fri: "08:00-18:00", sat: "09:00-14:00", sun: "" },
   booking: { slotMinutes: 120, leadTimeHours: 24, mobileRadiusMiles: 25 },
 };

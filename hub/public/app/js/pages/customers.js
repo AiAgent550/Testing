@@ -54,7 +54,7 @@ async function renderList(view, { navigate }) {
 
   search.addEventListener("input", debounce(() => { query = search.value.trim(); load(); }, 300));
   view.replaceChildren(
-    pageHead("M&K Hub", "Customers", h("button.btn", { type: "button", onclick: () => editCustomer(null, c => navigate(`#/customers/${c.id}`)) }, icon("plus"), "Add customer")),
+    pageHead("Curve Hub", "Customers", h("button.btn", { type: "button", onclick: () => editCustomer(null, c => navigate(`#/customers/${c.id}`)) }, icon("plus"), "Add customer")),
     h("div.stack", search, listBox),
   );
   search.focus();

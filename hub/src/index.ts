@@ -1,4 +1,4 @@
-// M&K Hub entry point. Every request passes through here first:
+// Curve Hub entry point. Every request passes through here first:
 //   /api/*            -> module routes (each declares its own access level)
 //   /app/*            -> the dashboard, only for fully signed-in users
 //   /login, /assets/* -> public static files

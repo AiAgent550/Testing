@@ -1,4 +1,4 @@
-# M&K Auto Services website
+# Curve Performance website
 
 Open `index.html` through a local server (the hero reads pixels from its photo, which browsers block on `file://`):
 

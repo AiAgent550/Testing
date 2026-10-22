@@ -25,7 +25,7 @@ export function sitePublic(handler: Handler): Handler {
   return async (ctx: Ctx) => {
     const origin = ctx.req.headers.get("origin");
     if (origin !== ctx.env.SITE_ORIGIN) {
-      const res = errorResponse(forbidden("Requests are only accepted from the M&K website."));
+      const res = errorResponse(forbidden("Requests are only accepted from the Curve Performance website."));
       res.headers.set("vary", "Origin");
       return res;
     }

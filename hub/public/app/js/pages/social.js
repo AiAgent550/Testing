@@ -31,7 +31,7 @@ export async function render(view, { params }) {
   const accountsBox = h("div.stack"), commentsBox = h("div.stack"), postsBox = h("div.stack");
   const newPostBtn = h("button.btn.primary", { type: "button", onclick: () => composer() }, icon("plus"), "New post");
   view.replaceChildren(
-    pageHead("M&K Hub", "Social", newPostBtn),
+    pageHead("Curve Hub", "Social", newPostBtn),
     h("div.stack",
       h("section.card.stack", h("h2.h2", "Accounts"), accountsBox),
       h("section.card.stack", h("h2.h2", "Posts"), postsBox),

@@ -137,7 +137,7 @@ async function renderList(view, { navigate, refreshCounts }) {
   search.addEventListener("input", debounce(() => { query = search.value.trim(); load(); }, 300));
 
   view.replaceChildren(
-    pageHead("M&K Hub", "Bookings", h("button.btn.primary", { type: "button", onclick: () => newBooking(navigate, refreshCounts) }, icon("plus"), "New booking")),
+    pageHead("Curve Hub", "Bookings", h("button.btn.primary", { type: "button", onclick: () => newBooking(navigate, refreshCounts) }, icon("plus"), "New booking")),
     h("div.stack",
       h("div", { style: "display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between" }, seg.el, h("div", { style: "flex:1 1 240px;max-width:420px" }, search)),
       listBox,

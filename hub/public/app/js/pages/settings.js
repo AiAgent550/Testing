@@ -60,7 +60,7 @@ export async function render(view) {
   } }, "Sign out on every device");
 
   view.replaceChildren(
-    pageHead("M&K Hub", "Settings"),
+    pageHead("Curve Hub", "Settings"),
     h("div.stack",
       h("section.card.stack",
         h("h2.h2", "Your account"),

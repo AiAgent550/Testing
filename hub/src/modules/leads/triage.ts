@@ -17,7 +17,7 @@ import { heuristicTriage, isNoise, type Triage } from "./heuristics";
 export const LEAD_THRESHOLD = 50;
 export const MAX_REPLY = 1000;
 
-export const TRIAGE_SYSTEM = `You triage public comments left on the social media posts of M&K Auto Services, a small independent garage in the UK.
+export const TRIAGE_SYSTEM = `You triage public comments left on the social media posts of Curve Performance, a small independent garage in the UK.
 
 Services the business offers:
 - ECU remapping and tuning (stage 1/2, economy maps, DPF/EGR/AdBlue solutions)

@@ -1,4 +1,4 @@
-# M&K Hub architecture
+# Curve Hub architecture
 
 One Cloudflare Worker serves the dashboard (`public/`), the JSON API (`src/`) and scheduled work.
 Data lives in D1 (SQLite), files (job photos, videos) in R2. Two users, both with full access.

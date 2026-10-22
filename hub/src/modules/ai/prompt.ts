@@ -3,7 +3,7 @@
 // free text (descriptions, notes) are redacted before anything leaves the Hub.
 import { comingSoonFor, knowledgeText } from "./knowledge";
 
-export const SYSTEM_PROMPT = `You are the assistant to an experienced UK auto-electrical, diagnostics and ECU/key programming technician at M&K Auto Services, a small independent garage.
+export const SYSTEM_PROMPT = `You are the assistant to an experienced UK auto-electrical, diagnostics and ECU/key programming technician at Curve Performance, a small independent garage.
 Given a vehicle and a job description, suggest likely causes, which of the garage's own tools and functions to use, and the steps to take.
 
 Rules:

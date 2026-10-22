@@ -360,5 +360,5 @@ async function renderDetail(view, id, { navigate, refreshCounts }) {
       ),
     ),
   );
-  document.title = `${v?.reg ? formatReg(v.reg) : d.job.ref} · Jobs · M&K Hub`;
+  document.title = `${v?.reg ? formatReg(v.reg) : d.job.ref} · Jobs · Curve Hub`;
 }

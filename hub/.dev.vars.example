@@ -1,4 +1,7 @@
 # Copy to .dev.vars for local development. Never commit .dev.vars.
+# Local origins (override the production values in wrangler.toml):
+APP_ORIGIN=http://localhost:8787
+SITE_ORIGIN=http://localhost:8765
 ENCRYPTION_KEY=
 ANTHROPIC_API_KEY=
 DVLA_API_KEY=
