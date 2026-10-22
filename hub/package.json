@@ -1,11 +1,11 @@
 {
-  "name": "mk-hub",
+  "name": "curve-hub",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
-    "db:migrate:local": "wrangler d1 migrations apply mk-hub --local",
-    "db:migrate:remote": "wrangler d1 migrations apply mk-hub --remote",
+    "db:migrate:local": "wrangler d1 migrations apply curve-hub --local",
+    "db:migrate:remote": "wrangler d1 migrations apply curve-hub --remote",
     "create-user": "node scripts/create-user.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

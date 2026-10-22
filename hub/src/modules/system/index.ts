@@ -22,7 +22,7 @@ export async function getSetting<T>(env: Ctx["env"], key: string): Promise<T> {
 
 async function health(ctx: Ctx) {
   const ok = await first<{ ok: number }>(ctx.env, "SELECT 1 AS ok");
-  return json({ ok: ok?.ok === 1, service: "mk-hub" });
+  return json({ ok: ok?.ok === 1, service: "curve-hub" });
 }
 
 async function overview(ctx: Ctx) {

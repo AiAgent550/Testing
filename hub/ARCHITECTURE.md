@@ -61,8 +61,8 @@ npx wrangler dev                # then open http://localhost:8787
 ## Deploying (once the Cloudflare account exists)
 
 ```
-npx wrangler d1 create mk-hub          # put the returned id in wrangler.toml
-npx wrangler r2 bucket create mk-hub-files
+npx wrangler d1 create curve-hub          # put the returned id in wrangler.toml
+npx wrangler r2 bucket create curve-hub-files
 npx wrangler secret put ENCRYPTION_KEY  # 32 random bytes, base64
 npm run db:migrate:remote
 MK_PASSWORD='...' node scripts/create-user.mjs --email ... --name ... --remote   # once per person

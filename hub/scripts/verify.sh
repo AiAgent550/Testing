@@ -21,8 +21,8 @@ for f in scripts/smoke.mjs scripts/smoke-*.mjs; do
   [ -f "$f" ] || continue
   name=$(basename "$f" .mjs)
   rm -rf .wrangler/state
-  npx wrangler d1 migrations apply mk-hub --local >/dev/null || { echo "migrations failed"; exit 1; }
-  for fx in test/fixtures/*.sql; do [ -f "$fx" ] && npx wrangler d1 execute mk-hub --local --file "$fx" >/dev/null; done
+  npx wrangler d1 migrations apply curve-hub --local >/dev/null || { echo "migrations failed"; exit 1; }
+  for fx in test/fixtures/*.sql; do [ -f "$fx" ] && npx wrangler d1 execute curve-hub --local --file "$fx" >/dev/null; done
   export SMOKE_EMAIL="$name@mk.test" SMOKE_PASSWORD="smoke-test-password-123"
   MK_PASSWORD="$SMOKE_PASSWORD" node scripts/create-user.mjs --email "$SMOKE_EMAIL" --name "Smoke ${name#smoke-}" >/dev/null 2>&1
   # Own process group, so the whole wrangler tree (which restarts workerd if only that dies) stops together.

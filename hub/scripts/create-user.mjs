@@ -31,5 +31,5 @@ const now = new Date().toISOString();
 const q = s => `'${String(s).replace(/'/g, "''")}'`;
 const sql = `INSERT INTO users (id, email, name, password_hash, totp_enabled, created_at, updated_at) VALUES (${q(id)}, ${q(email)}, ${q(name)}, ${q(hash)}, 0, ${q(now)}, ${q(now)});`;
 
-execFileSync("npx", ["wrangler", "d1", "execute", "mk-hub", args.remote ? "--remote" : "--local", "--command", sql], { stdio: "inherit" });
+execFileSync("npx", ["wrangler", "d1", "execute", "curve-hub", args.remote ? "--remote" : "--local", "--command", sql], { stdio: "inherit" });
 console.log(`Created ${name} <${email}>. They set up two-step verification on first sign-in.`);

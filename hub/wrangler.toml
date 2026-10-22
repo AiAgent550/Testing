@@ -1,5 +1,5 @@
 # Curve Hub (Curve Performance): one Cloudflare Worker serving the dashboard, the API and scheduled jobs.
-name = "mk-hub"
+name = "curve-hub"
 main = "src/index.ts"
 compatibility_date = "2026-09-01"
 compatibility_flags = ["nodejs_compat"]
@@ -13,13 +13,13 @@ not_found_handling = "none"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "mk-hub"
-database_id = "00000000-0000-0000-0000-000000000000"   # replaced with the real id after `wrangler d1 create mk-hub`
+database_name = "curve-hub"
+database_id = "0cdbafa6-68b0-461b-8872-0ec0bee6b001"
 migrations_dir = "migrations"
 
 [[r2_buckets]]
 binding = "FILES"
-bucket_name = "mk-hub-files"
+bucket_name = "curve-hub-files"
 
 [triggers]
 crons = ["*/10 * * * *"]          # comment watcher and outbox sender
