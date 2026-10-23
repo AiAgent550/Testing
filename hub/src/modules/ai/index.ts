@@ -25,7 +25,7 @@ async function feedback(ctx: Ctx) {
   return json({ suggestion: await setFeedback(ctx.env, ctx.params.id, input.feedback, userOf(ctx).id) });
 }
 
-/** Translates a piece of text into the signed-in user's language. Nothing is stored. */
+/** Translates English to Polish and Polish to English (other languages into the reader's). Nothing is stored. */
 async function translate(ctx: Ctx) {
   const user = userOf(ctx);
   const { text } = parse(await ctx.body(), { text: str({ max: 4000 }) });
@@ -36,7 +36,7 @@ async function translate(ctx: Ctx) {
   await record(ctx.env, "ai_translate", user.id, true);
   const result = await translateText(ctx.env, text, user.lang);
   if (!result) throw new HttpError(502, "ai_failed", "The translation didn't come back. Try again in a minute.");
-  return json(result.sameLanguage ? { translation: null, same_language: true, lang: user.lang } : { translation: result.translation, same_language: false, lang: user.lang });
+  return json({ translation: result.translation, from: result.from, to: result.to });
 }
 
 async function status(ctx: Ctx) {
