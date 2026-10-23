@@ -34,9 +34,9 @@ async function translate(ctx: Ctx) {
   }
   await guard(ctx.env, "ai_translate", user.id, 60, 60, true);
   await record(ctx.env, "ai_translate", user.id, true);
-  const translation = await translateText(ctx.env, text, user.lang);
-  if (!translation) throw new HttpError(502, "ai_failed", "The translation didn't come back. Try again in a minute.");
-  return json({ translation, lang: user.lang });
+  const result = await translateText(ctx.env, text, user.lang);
+  if (!result) throw new HttpError(502, "ai_failed", "The translation didn't come back. Try again in a minute.");
+  return json(result.sameLanguage ? { translation: null, same_language: true, lang: user.lang } : { translation: result.translation, same_language: false, lang: user.lang });
 }
 
 async function status(ctx: Ctx) {

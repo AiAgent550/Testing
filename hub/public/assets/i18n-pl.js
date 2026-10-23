@@ -72,6 +72,7 @@ export const PL = {
   "Translate": "Przetłumacz",
   "Translating…": "Tłumaczę…",
   "Translation (AI)": "Tłumaczenie (AI)",
+  "Already in your language.": "To już jest w Twoim języku.",
 
   // ---------- today ----------
   "Morning, {name}": "Dzień dobry, {name}",

@@ -237,7 +237,11 @@ export function translatable(shown, style = "margin:0;white-space:pre-wrap;overf
     btn.disabled = true;
     btn.replaceChildren(h("span.spinner"), t("Translating…"));
     try {
-      const { translation } = await api("/api/ai/translate", { method: "POST", body: { text: String(text).slice(0, 4000) } });
+      const { translation, same_language } = await api("/api/ai/translate", { method: "POST", body: { text: String(text).slice(0, 4000) } });
+      if (same_language) {
+        btn.replaceWith(h("span.muted.small", t("Already in your language.")));
+        return;
+      }
       result.replaceChildren(h("span.muted.small", t("Translation (AI)")), h("p", { style: "margin:0;white-space:pre-wrap;overflow-wrap:anywhere" }, translation));
       result.hidden = false;
       btn.remove();
