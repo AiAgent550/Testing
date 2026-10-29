@@ -6,7 +6,7 @@ import { first, newId, nextRef, now, run } from "../../lib/db";
 import { conflict, notFound } from "../../lib/http";
 import { findOrCreateCustomer, getCustomer } from "../customers/service";
 import { ensureVehicle } from "../vehicles/service";
-import { queueMessage } from "../notifications";
+import { notify, queueMessage } from "../notifications";
 import { markLeadBooked } from "../leads/service";
 import { STATUS_LABELS, canTransition } from "./status";
 
@@ -42,6 +42,10 @@ export async function createBooking(env: Env, input: BookingInput, actorId: stri
     input.source, input.lead_id || null, actorId, t, t,
   );
   await audit(env, actorId, "booking.create", "booking", id, { ref, source: input.source, service: input.service });
+  await notify(env, {
+    kind: "booking_new", actorId, link: `#/bookings/${id}`, tag: `booking-${id}`,
+    params: { ref, name: customer.name, service: input.service, reg: displayReg(input.reg), source: input.source },
+  });
 
   const to = customer.email ? { channel: "email" as const, to: customer.email } : customer.phone ? { channel: "sms" as const, to: customer.phone } : null;
   if (to) {
@@ -75,6 +79,14 @@ export async function setBookingStatus(env: Env, id: string, status: BookingStat
   const res = await run(env, "UPDATE bookings SET status = ?, updated_at = ? WHERE id = ? AND status = ?", status, now(), id, b.status);
   if (!res.meta.changes) throw conflict("This booking was changed by someone else. Reload and try again.");
   await audit(env, actorId, "booking.status", "booking", id, { from: b.status, to: status });
+  if (status === "cancelled") {
+    const customer = await getCustomer(env, b.customer_id);
+    const vehicle = b.vehicle_id ? await first<{ reg: string }>(env, "SELECT reg FROM vehicles WHERE id = ?", b.vehicle_id) : null;
+    await notify(env, {
+      kind: "booking_cancelled", actorId, link: `#/bookings/${id}`, tag: `booking-${id}`,
+      params: { ref: b.ref, name: customer?.name, service: b.service, reg: displayReg(vehicle?.reg) },
+    });
+  }
   return (await getBooking(env, id))!;
 }
 
@@ -87,6 +99,10 @@ export async function confirmBooking(env: Env, id: string, start: string, end: s
   await audit(env, actorId, b.status === "confirmed" ? "booking.reschedule" : "booking.confirm", "booking", id, { from: b.status, scheduled_start: start, scheduled_end: end });
 
   const customer = await getCustomer(env, b.customer_id);
+  await notify(env, {
+    kind: b.status === "confirmed" ? "booking_rescheduled" : "booking_confirmed", actorId, link: `#/bookings/${id}`, tag: `booking-${id}`,
+    params: { ref: b.ref, name: customer?.name, start },
+  });
   const to = customer?.email ? { channel: "email" as const, to: customer.email } : customer?.phone ? { channel: "sms" as const, to: customer.phone } : null;
   if (to && customer) {
     try {
@@ -97,4 +113,11 @@ export async function confirmBooking(env: Env, id: string, start: string, end: s
     } catch (err) { console.warn("booking: confirmation not queued", b.ref, err); }
   }
   return (await getBooking(env, id))!;
+}
+
+/** "AB12CDE" -> "AB12 CDE" for notifications; other plates as stored. */
+function displayReg(reg: string | null | undefined): string | null {
+  const r = String(reg || "").toUpperCase().replace(/\s/g, "");
+  if (!r) return null;
+  return /^[A-Z]{2}\d{2}[A-Z]{3}$/.test(r) ? `${r.slice(0, 4)} ${r.slice(4)}` : r;
 }

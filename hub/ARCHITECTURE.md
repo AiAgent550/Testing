@@ -35,7 +35,7 @@ public/app/js/
 | jobs | jobs, job_notes, job_files | `createJobFromBooking` | jobs |
 | ai | ai_suggestions | `client.ts: structured()` | (inside jobs) |
 | leads, social | social_accounts, social_posts, social_post_targets, comments, leads | `markLeadBooked` | leads, social |
-| notifications | outbox | `queueMessage` | (inside settings later) |
+| notifications | outbox, notifications, push_subscriptions, notification_prefs | `notify`, `queueMessage` | notifications, settings |
 
 Rules:
 1. A module writes only its own tables. To change another module's data, call that module's `service.ts`.
@@ -48,6 +48,25 @@ Rules:
 7. UI pages import only from `core.js`, never inline `<script>` or `style="..."` attributes (blocked by the CSP);
    use `h()` with the `style` option, which goes through CSSOM.
 8. Copy is plain British English written for the two people using it.
+
+## Notifications
+
+`notify(env, event, exec?)` in `modules/notifications/notify.ts` is how a module tells the owners something
+happened (new or changed booking, new job, assignment, job status, note, new lead, social post that failed).
+It never throws, so a failed notification can't break the action that caused it.
+
+- **Who:** everyone except the person who did it; website and scheduled events reach everyone; an assignment
+  reaches only the assignee. Each person can switch groups off in Settings (`notification_prefs`; no row = on).
+- **Inbox:** one `notifications` row per person, stored as text keys + params and rendered in the reader's
+  language when read (`texts.ts`, English and Polish). Shown under the bell in the header.
+- **Phone:** Web Push to every device the person turned on (`push_subscriptions`). `webpush.ts` signs a VAPID
+  JWT (RFC 8292) and encrypts the payload with aes128gcm (RFC 8291/8188) using WebCrypto only. Endpoints must be
+  a known push service. A 404/410 from the push service deletes the device. Delivery runs after the response
+  (`exec.waitUntil`) when the caller has a request, otherwise it is awaited for at most 4 seconds.
+- **Service worker** (`public/sw.js`) shows the notification and opens the linked page on tap.
+- **Keys:** `node scripts/vapid-keys.mjs`, then `wrangler secret put VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY`
+  (`VAPID_SUBJECT` is a var in wrangler.toml). New keys mean every device has to turn notifications on again.
+- **iPhone:** Web Push only works in the installed app (Add to Home Screen), iOS 16.4 or later.
 
 ## Running locally
 
@@ -64,6 +83,7 @@ npx wrangler dev                # then open http://localhost:8787
 npx wrangler d1 create curve-hub          # put the returned id in wrangler.toml
 npx wrangler r2 bucket create curve-hub-files
 npx wrangler secret put ENCRYPTION_KEY  # 32 random bytes, base64
+node scripts/vapid-keys.mjs               # then: npx wrangler secret put VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY
 npm run db:migrate:remote
 MK_PASSWORD='...' node scripts/create-user.mjs --email ... --name ... --remote   # once per person
 npm run deploy

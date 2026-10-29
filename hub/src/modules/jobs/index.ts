@@ -12,6 +12,7 @@ import { int, nullable, oneOf, optional, parse, reg, str, vin } from "../../lib/
 import { setBookingStatus } from "../bookings/service";
 import { ensureVehicle, updateVehicle } from "../vehicles/service";
 import { latestSuggestion } from "../ai/service";
+import { notify } from "../notifications";
 import { formatReg, getJob, openJobForBooking, readVehicle, soft } from "./service";
 import { ACTIVE_STATUSES, canTransition, transitionStamps } from "./status";
 import { ALLOWED_DECLARED, MAX_PHOTO_BYTES, sniffImage } from "./files";
@@ -118,11 +119,14 @@ async function createJob(ctx: Ctx) {
      VALUES (?, ?, ?, ?, ?, ?, 'open', ?, ?, ?)`,
     jobId, ref, input.customer_id ?? null, vehicleId, title, input.description ?? null, user.id, t, t);
   await audit(env, user.id, "job.create", "job", jobId, { ref, vehicle_id: vehicleId, customer_id: input.customer_id ?? null });
+  await notify(env, { kind: "job_new", actorId: user.id, link: `#/jobs/${jobId}`, tag: `job-${jobId}`, params: { ref, title, actor: user.name } }, ctx.exec);
   return json({ job: await getJob(env, jobId) }, 201);
 }
 
 async function createFromBooking(ctx: Ctx) {
-  const { job, created } = await openJobForBooking(ctx.env, ctx.params.bookingId, userOf(ctx).id);
+  const user = userOf(ctx);
+  const { job, created } = await openJobForBooking(ctx.env, ctx.params.bookingId, user.id);
+  if (created) await notify(ctx.env, { kind: "job_new", actorId: user.id, link: `#/jobs/${job.id}`, tag: `job-${job.id}`, params: { ref: job.ref, title: job.title, actor: user.name } }, ctx.exec);
   return json({ job, created }, created ? 201 : 200);
 }
 
@@ -163,7 +167,16 @@ async function updateJob(ctx: Ctx) {
   if (moving && input.status === "completed" && job.booking_id) {
     await soft("bookings.setBookingStatus(completed)", () => setBookingStatus(env, job.booking_id!, "completed", user.id));
   }
-  return json({ job: await getJob(env, job.id) });
+  const updated = (await getJob(env, job.id))!;
+  const about = { ref: job.ref, title: updated.title, actor: user.name };
+  const STATUS_KIND = { in_progress: "job_started", completed: "job_completed", cancelled: "job_cancelled" } as const;
+  if (moving && input.status! in STATUS_KIND) {
+    await notify(env, { kind: STATUS_KIND[input.status as keyof typeof STATUS_KIND], actorId: user.id, link: `#/jobs/${job.id}`, tag: `job-${job.id}`, params: about }, ctx.exec);
+  }
+  if (input.assigned_to && input.assigned_to !== job.assigned_to) {
+    await notify(env, { kind: "job_assigned", actorId: user.id, onlyUserId: input.assigned_to, link: `#/jobs/${job.id}`, tag: `job-${job.id}-assigned`, params: about }, ctx.exec);
+  }
+  return json({ job: updated });
 }
 
 async function updateJobVehicle(ctx: Ctx) {
@@ -196,6 +209,7 @@ async function addNote(ctx: Ctx) {
   await run(env, "INSERT INTO job_notes (id, job_id, user_id, body, created_at) VALUES (?, ?, ?, ?, ?)", noteId, job.id, user.id, body, t);
   await run(env, "UPDATE jobs SET updated_at = ? WHERE id = ?", t, job.id);
   await audit(env, user.id, "job.note_add", "job", job.id, { note_id: noteId });
+  await notify(env, { kind: "job_note", actorId: user.id, link: `#/jobs/${job.id}`, tag: `job-${job.id}-note`, params: { ref: job.ref, note: body, actor: user.name } }, ctx.exec);
   return json({ note: { id: noteId, body, created_at: t, user_id: user.id, author_name: user.name } }, 201);
 }
 

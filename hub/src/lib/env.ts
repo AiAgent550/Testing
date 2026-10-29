@@ -12,6 +12,11 @@ export interface Env {
   STAFF_MAIL?: SendEmail;
   STAFF_ALERT_TO?: string;
 
+  /** Web Push (phone notifications): VAPID key pair, base64url raw keys. Generate with scripts/vapid-keys.mjs. */
+  VAPID_PUBLIC_KEY?: string;
+  VAPID_PRIVATE_KEY?: string;
+  VAPID_SUBJECT?: string;
+
   ENCRYPTION_KEY?: string;
   ANTHROPIC_API_KEY?: string;
   DVLA_API_KEY?: string;

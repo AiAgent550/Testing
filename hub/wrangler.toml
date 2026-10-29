@@ -38,6 +38,7 @@ APP_ORIGIN = "https://hub.curveperformance.co.uk"
 SITE_ORIGIN = "https://curveperformance.co.uk"
 BUSINESS_NAME = "Curve Performance"
 STAFF_ALERT_TO = "mkautoserviceslimited@gmail.com"
+VAPID_SUBJECT = "mailto:info@curveperformance.co.uk"   # contact for push services (Web Push)
 
 # Secrets (never in this file). Set with `wrangler secret put NAME`, or .dev.vars locally:
 #   ENCRYPTION_KEY      32 random bytes, base64 (encrypts 2FA secrets and platform tokens)
@@ -47,5 +48,6 @@ STAFF_ALERT_TO = "mkautoserviceslimited@gmail.com"
 #   META_APP_SECRET, YOUTUBE_API_KEY, TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET     social platforms
 #   META_APP_ID         with META_APP_SECRET: Facebook Login for Instagram + Facebook Pages
 #                       (redirect URI to register: <APP_ORIGIN>/api/social/connect/meta/callback)
+#   VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY      phone notifications (Web Push); generate with node scripts/vapid-keys.mjs
 #   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET   Google OAuth for YouTube comments
 #                       (redirect URI to register: <APP_ORIGIN>/api/social/connect/google/callback)

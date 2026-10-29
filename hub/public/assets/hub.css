@@ -75,7 +75,24 @@ body::after {
 }
 .topbar::after { content: ""; position: absolute; inset: auto 0 0; height: 1px; background: var(--hairline); }
 .topbar .brand { grid-column: 2; }
-.who { grid-column: 3; justify-self: end; font: 300 10px/1.3 var(--display); letter-spacing: .2em; text-transform: uppercase; color: var(--steel); text-align: right; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.top-right { grid-column: 3; justify-self: end; display: flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; }
+.top-right .who { min-width: 0; }
+.bell { position: relative; display: inline-grid; place-items: center; width: 44px; height: 44px; margin-right: -10px; border-radius: 99px; color: var(--mist); transition: color .3s; flex: none; }
+.bell:hover, .bell:focus-visible { color: var(--led); }
+.bell svg { width: 22px; height: 22px; }
+.bell .badge { position: absolute; top: 5px; right: 4px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 99px; background: var(--led); color: #061018; font: 700 10px/17px var(--body); text-align: center; box-shadow: 0 0 10px rgba(191,227,255,.5); }
+.notif.unread .title::before { content: ""; display: inline-block; width: 7px; height: 7px; margin: 0 9px 2px 0; border-radius: 50%; background: var(--led); box-shadow: 0 0 8px rgba(191,227,255,.6); vertical-align: middle; }
+.notif:not(.unread) .title { font-weight: 400; color: var(--mist); }
+.switches { display: grid; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: var(--panel); }
+.switch { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 14px; min-height: 52px; padding: 10px 18px; cursor: pointer; }
+.switch + .switch::before { content: ""; position: absolute; top: 0; left: 18px; right: 18px; height: 1px; background: var(--line); }
+.switch input { appearance: none; -webkit-appearance: none; flex: none; position: relative; width: 46px; height: 28px; margin: 0; border-radius: 99px; border: 1px solid var(--line-strong); background: transparent; cursor: pointer; transition: background .25s, border-color .25s; }
+.switch input::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--steel); transition: transform .25s, background .25s; }
+.switch input:checked { border-color: var(--led); background: rgba(191,227,255,.12); }
+.switch input:checked::after { transform: translateX(18px); background: var(--led); box-shadow: 0 0 10px rgba(191,227,255,.6); }
+.switch input:focus-visible { outline: 1px solid var(--led); outline-offset: 3px; }
+.hint { margin: 0; padding: 12px 14px; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--raise); font-size: 15px; color: var(--mist); }
+.who { justify-self: end; font: 300 10px/1.3 var(--display); letter-spacing: .2em; text-transform: uppercase; color: var(--steel); text-align: right; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 main.view {
   position: relative; padding: 26px max(16px, env(safe-area-inset-right, 0px)) calc(var(--tabbar) + env(safe-area-inset-bottom, 0px) + 32px) max(16px, env(safe-area-inset-left, 0px));
   width: 100%; max-width: 1100px; margin: 0 auto; isolation: isolate;
@@ -115,7 +132,7 @@ main.view::before { /* cold key light falling on the page from above, as on the 
   .rail .grow { flex: 1; }
   .topbar { grid-template-columns: 1fr auto; padding-left: 32px; padding-right: 32px; }
   .topbar .brand { display: none; }
-  .who { grid-column: 2; }
+  .top-right { grid-column: 2; }
   main.view { padding: 34px 32px 56px; }
 }
 

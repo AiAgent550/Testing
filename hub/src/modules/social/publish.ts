@@ -6,6 +6,7 @@ import { all, first, now, run } from "../../lib/db";
 import { getAdapter } from "./adapters";
 import { getAccount, markNeedsReauth } from "./accounts";
 import { signMediaToken } from "./mediatoken";
+import { notify } from "../notifications";
 import { AdapterError, type PostTargetRow, type SocialPostRow } from "./types";
 
 const RETRY_FOR_MS = 24 * 3600_000;
@@ -58,7 +59,10 @@ export async function publishPost(env: Env, postId: string, actorId: string | nu
       if (e.code === "needs_reauth" && account) await markNeedsReauth(env, account, e.message);
       const retry = e.transient && !giveUp;
       await setTarget(env, t.id, retry ? "queued" : "failed", { error: e.message, external_post_id: e.resume ?? (retry ? t.external_post_id : null) });
-      if (!retry) await audit(env, actorId, "social.post_failed", "social_post", postId, { target: t.id, error: e.message.slice(0, 200) });
+      if (!retry) {
+        await audit(env, actorId, "social.post_failed", "social_post", postId, { target: t.id, error: e.message.slice(0, 200) });
+        await notify(env, { kind: "social_failed", actorId, link: "#/social", tag: `post-${postId}`, params: { platform: account?.platform ?? "", error: e.message.slice(0, 160) } });
+      }
     }
   }
   const statuses = (await all<{ status: PostTargetRow["status"] }>(env, "SELECT status FROM social_post_targets WHERE post_id = ?", postId)).map(r => r.status);

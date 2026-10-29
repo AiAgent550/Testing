@@ -1,7 +1,7 @@
 // Dashboard shell: navigation, hash routing (#/page/arg), and handing the view to page modules.
 // Each page module exports `render(view, { params, navigate })` and may return a cleanup function.
 import { PAGES } from "./pages/index.js";
-import { api, h, icon, loading, t, toast } from "./core.js";
+import { api, h, icon, loading, t, tn, toast } from "./core.js";
 import { setLang } from "/assets/i18n.js";
 
 const view = document.getElementById("view");
@@ -59,7 +59,7 @@ async function route() {
   view.replaceChildren(loading());
   try {
     const mod = await page.load();
-    const result = await mod.render(view, { params, navigate: to => (location.hash = to), refreshCounts });
+    const result = await mod.render(view, { params, navigate: to => (location.hash = to), refreshCounts, refreshBell });
     if (typeof result === "function") cleanup = result;
   } catch (err) {
     console.error(err);
@@ -72,6 +72,17 @@ async function refreshCounts() {
   try { counts = (await api("/api/system/overview")).counts; drawNav(); } catch {}
 }
 
+/** The bell in the header: unread notifications. */
+async function refreshBell() {
+  try {
+    const { unread } = await api("/api/notifications?limit=1");
+    const badge = document.getElementById("bell-count"), bell = document.getElementById("bell");
+    badge.textContent = unread > 99 ? "99+" : String(unread);
+    badge.hidden = !unread;
+    bell.setAttribute("aria-label", unread ? tn(unread, "{n} unread notification|{n} unread notifications") : t("Notifications"));
+  } catch {}
+}
+
 async function boot() {
   try {
     const me = await api("/api/auth/me");
@@ -79,12 +90,25 @@ async function boot() {
     document.getElementById("who").textContent = me.user.name;
     for (const nav of document.querySelectorAll("nav[aria-label]")) nav.setAttribute("aria-label", t("Sections"));
     document.querySelector(".topbar .brand")?.setAttribute("aria-label", t("Curve Hub, today"));
+    document.getElementById("bell")?.setAttribute("aria-label", t("Notifications"));
   } catch { return; }
   drawNav();
   refreshCounts();
-  addEventListener("hashchange", route);
+  refreshBell();
+  addEventListener("hashchange", () => { route(); refreshBell(); });
   route();
-  if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
+  setInterval(() => { if (document.visibilityState === "visible") refreshBell(); }, 60_000);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") refreshBell(); });
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+    navigator.serviceWorker.addEventListener("message", e => {
+      if (e.data?.type === "notification") refreshBell();
+      if (e.data?.type === "open" && typeof e.data.url === "string") {
+        const u = new URL(e.data.url, location.origin);
+        if (u.origin === location.origin && u.pathname.startsWith("/app")) location.hash = u.hash || "#/today";
+      }
+    });
+  }
   addEventListener("unhandledrejection", e => { if (e.reason?.message) toast(e.reason.message, "bad"); });
 }
 

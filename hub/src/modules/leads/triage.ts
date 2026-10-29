@@ -10,7 +10,7 @@ import { audit } from "../../lib/audit";
 import { ukPhone } from "../../lib/validate";
 import { aiAvailable, structured } from "../ai/client";
 import { getSetting } from "../system";
-import { queueMessage } from "../notifications";
+import { notify, queueMessage } from "../notifications";
 import { sendStaffAlert } from "../notifications/alerts";
 import type { CommentRow } from "../social/types";
 import { heuristicTriage, isNoise, type Triage } from "./heuristics";
@@ -177,6 +177,10 @@ export async function triagePending(env: Env, { batchSize = 5, maxBatches = 4 } 
       );
       await audit(env, null, "lead.create", "lead", id, { comment_id: c.id, score: t.score, source });
       await notifyOwner(env, id, c, t);
+      await notify(env, {
+        kind: "lead_new", actorId: null, link: "#/leads", tag: `lead-${id}`,
+        params: { platform: c.platform, handle: String(c.author_handle || c.author_name || "").replace(/^@/, "") || "?", summary: t.summary },
+      });
       newLeads++;
     }
   }

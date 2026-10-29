@@ -9,5 +9,6 @@ export const PAGES = [
   { id: "leads",     label: N_("Leads"),     icon: "leads",     tab: true,  load: () => import("./leads.js"), badge: "newLeads" },
   { id: "customers", label: N_("Customers"), icon: "customers", tab: false, load: () => import("./customers.js") },
   { id: "social",    label: N_("Social"),    icon: "social",    tab: false, load: () => import("./social.js") },
+  { id: "notifications", label: N_("Notifications"), icon: "bell", tab: false, load: () => import("./notifications.js") },
   { id: "settings",  label: N_("Settings"),  icon: "settings",  tab: false, load: () => import("./settings.js") },
 ];

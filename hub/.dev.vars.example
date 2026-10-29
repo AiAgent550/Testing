@@ -5,3 +5,6 @@ SITE_ORIGIN=http://localhost:8765
 ENCRYPTION_KEY=
 ANTHROPIC_API_KEY=
 DVLA_API_KEY=
+# Phone notifications (Web Push): generate with node scripts/vapid-keys.mjs --env
+VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=

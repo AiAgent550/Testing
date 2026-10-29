@@ -9,6 +9,8 @@ mkdir -p .wrangler
 # wrangler.toml holds the production origins; the local Hub must run with local ones.
 grep -q '^APP_ORIGIN=' .dev.vars || printf 'APP_ORIGIN=http://localhost:8787\n' >> .dev.vars
 grep -q '^SITE_ORIGIN=' .dev.vars || printf 'SITE_ORIGIN=http://localhost:8765\n' >> .dev.vars
+# Local phone-notification keys, so the push path is tested end to end.
+grep -q '^VAPID_PUBLIC_KEY=' .dev.vars || node scripts/vapid-keys.mjs --env >> .dev.vars
 if fuser "$PORT/tcp" >/dev/null 2>&1; then echo "Port $PORT is busy; stop the other Hub first (fuser -k $PORT/tcp)."; exit 1; fi
 
 DEV=""

@@ -79,6 +79,7 @@ export async function render(view) {
         langPick.el,
         h("p.muted.small", { style: "margin:0" }, t("Changes the Hub and AI tool suggestions for you only.")),
       ),
+      await notificationsCard(),
       h("section.card.stack",
         h("h2.h2", t("Your account")),
         h("dl.kv", h("dt", t("Name")), h("dd", me.user.name), h("dt", t("Email")), h("dd", me.user.email),
@@ -110,4 +111,124 @@ function deviceName(ua = "") {
   if (/Macintosh/.test(ua)) return "Mac";
   if (/Windows/.test(ua)) return t("Windows PC");
   return t("Browser");
+}
+
+// ---------- notifications ----------
+const GROUPS = [
+  ["bookings_new", N_("New bookings")],
+  ["bookings_changes", N_("Bookings confirmed, moved or cancelled")],
+  ["jobs_new", N_("New jobs")],
+  ["jobs_assigned", N_("Jobs assigned to me")],
+  ["jobs_status", N_("Jobs started, completed or cancelled")],
+  ["jobs_notes", N_("Notes added to jobs")],
+  ["leads", N_("New leads from social media")],
+  ["social", N_("Social posts that didn't publish")],
+];
+
+const b64urlBytes = s => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4)), c => c.charCodeAt(0));
+const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const isStandalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const pushSupported = () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+
+async function currentSubscription() {
+  if (!pushSupported()) return null;
+  const reg = await navigator.serviceWorker.getRegistration("/");
+  return reg ? reg.pushManager.getSubscription() : null;
+}
+
+async function notificationsCard() {
+  const [{ publicKey, push }, { prefs }] = await Promise.all([api("/api/notifications/config"), api("/api/notifications/prefs")]);
+  const state = h("div.stack", { style: "gap:12px" });
+  const card = h("section.card.stack",
+    h("h2.h2", t("Notifications")),
+    h("p.muted.small", { style: "margin:0" }, t("Get a notification on your phone when something happens, even when the Hub is closed. Everything also shows under the bell at the top.")),
+    state,
+    h("h3.kicker", { style: "margin-top:6px" }, t("Tell me about")),
+    h("div.switches", GROUPS.map(([key, label]) => {
+      const input = h("input", { type: "checkbox", checked: prefs[key] !== false, "aria-label": t(label) });
+      input.addEventListener("change", async () => {
+        try { await api("/api/notifications/prefs", { method: "PUT", body: { prefs: { [key]: input.checked } } }); }
+        catch (err) { input.checked = !input.checked; toast(err.message, "bad"); }
+      });
+      return h("label.switch", h("span", t(label)), input);
+    })),
+    h("p.muted.small", { style: "margin:0" }, t("These choices apply to the bell and to your phone. You're never notified about things you did yourself.")),
+  );
+
+  async function turnOn(btn) {
+    btn.disabled = true;
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") { await draw(); return; }
+      const reg = await navigator.serviceWorker.register("/sw.js");
+      await navigator.serviceWorker.ready;
+      const key = b64urlBytes(publicKey);
+      let sub = await reg.pushManager.getSubscription();
+      if (sub && sub.options?.applicationServerKey && new Uint8Array(sub.options.applicationServerKey).join() !== key.join()) { await sub.unsubscribe(); sub = null; }
+      sub ??= await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+      await api("/api/notifications/subscriptions", { method: "POST", body: sub.toJSON() });
+      toast(t("Notifications are on for this device."));
+    } catch (err) {
+      toast(err.message || t("Notifications couldn't be turned on."), "bad");
+    }
+    await draw();
+  }
+
+  async function turnOff(btn) {
+    btn.disabled = true;
+    try {
+      const sub = await currentSubscription();
+      if (sub) {
+        await api("/api/notifications/subscriptions", { method: "DELETE", body: { endpoint: sub.endpoint } });
+        await sub.unsubscribe();
+      }
+      toast(t("Notifications are off for this device."));
+    } catch (err) { toast(err.message, "bad"); }
+    await draw();
+  }
+
+  async function sendTest(btn) {
+    btn.disabled = true;
+    try {
+      const r = await api("/api/notifications/test", { method: "POST", body: {} });
+      toast(r.delivered ? t("Test sent. It should appear in a few seconds.") : t("Test added under the bell. No phone accepted it, so turn notifications on for this device first."));
+    } catch (err) { toast(err.message, "bad"); }
+    btn.disabled = false;
+  }
+
+  async function draw() {
+    const parts = [];
+    if (!pushSupported()) {
+      parts.push(h("div", chip("draft", t("Not available here"))));
+      if (isIOS() && !isStandalone()) {
+        parts.push(h("p.hint", t("On iPhone, notifications only work in the installed app: tap Share, then Add to Home Screen, open Curve Hub from your home screen and turn notifications on here. Needs iOS 16.4 or later.")));
+      } else {
+        parts.push(h("p.muted.small", { style: "margin:0" }, t("This browser can't receive notifications. Try Chrome on Android, or the installed app on iPhone.")));
+      }
+    } else if (!push) {
+      parts.push(h("div", chip("draft", t("Not set up yet"))));
+      parts.push(h("p.muted.small", { style: "margin:0" }, t("Phone notifications need the Hub's notification keys on Cloudflare. The bell still works.")));
+    } else if (Notification.permission === "denied") {
+      parts.push(h("div", chip("failed", t("Blocked in this browser"))));
+      parts.push(h("p.hint", t("Notifications are blocked for this site. Allow them in your browser or phone settings for hub.curveperformance.co.uk, then come back here.")));
+    } else {
+      const sub = await currentSubscription();
+      if (sub && Notification.permission === "granted") {
+        const off = h("button.btn.small.ghost", { type: "button" }, t("Turn off on this device"));
+        off.addEventListener("click", () => turnOff(off));
+        const test = h("button.btn.small", { type: "button" }, t("Send a test notification"));
+        test.addEventListener("click", () => sendTest(test));
+        parts.push(h("div", chip("confirmed", t("On for this device"))), h("div", { style: "display:flex;gap:10px;flex-wrap:wrap" }, test, off));
+      } else {
+        const on = h("button.btn.primary", { type: "button" }, t("Turn on notifications on this device"));
+        on.addEventListener("click", () => turnOn(on));
+        parts.push(h("div", chip("draft", t("Off for this device"))), h("div", on));
+        if (isIOS() && !isStandalone()) parts.push(h("p.hint", t("On iPhone, notifications only work in the installed app: tap Share, then Add to Home Screen, open Curve Hub from your home screen and turn notifications on here. Needs iOS 16.4 or later.")));
+      }
+    }
+    state.replaceChildren(parts);
+  }
+
+  await draw();
+  return card;
 }
