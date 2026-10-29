@@ -1,0 +1,8 @@
+{
+  "_comment": "Company careers pages checked directly on every run (catches jobs that never reach job boards). Add a company by putting its job-board slug under the right platform. The slug is the name in the careers URL: boards.greenhouse.io/<slug>, jobs.lever.co/<slug>, jobs.ashbyhq.com/<slug>, jobs.smartrecruiters.com/<slug>.",
+
+  "greenhouse": ["gitlab", "remotecom", "intercom", "wise", "datadog", "cloudflare", "elastic", "mongodb", "grafanalabs", "canonical", "twilio", "okta", "sumup", "n26", "typeform", "bitpanda", "workato", "airtable", "vercel", "tines", "payoneer", "stripe", "coinbase", "anaplan", "smartbear"],
+  "lever": ["bazaarvoice", "anomali", "appen"],
+  "ashby": ["zapier", "deel", "miro", "pleo", "posthog", "sentry", "snyk", "instil", "lightspeedhq"],
+  "smartrecruiters": ["version1"]
+}

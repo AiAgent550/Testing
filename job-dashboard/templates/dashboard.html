@@ -1,0 +1,400 @@
+<title>Michal's Job Queue</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Archivo:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a service-desk ticket queue. Summary counters on top, filter rail, then one ticket per job, best match first. */
+:root {
+  --bg: #f3f5f4;
+  --panel: #ffffff;
+  --ink: #17201e;
+  --muted: #5b6764;
+  --line: #d9dfdd;
+  --accent: #0d6b5f;
+  --accent-ink: #ffffff;
+  --accent-soft: #d8ece8;
+  --good: #1d7a3d;
+  --warn: #9a5b00;
+  --warn-soft: #fbefd9;
+  --bad: #b3261e;
+  --chip: #e9eeec;
+  --font-display: "Bricolage Grotesque", "Archivo", system-ui, sans-serif;
+  --font-body: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #101514; --panel: #171e1c; --ink: #e6ecea; --muted: #97a4a0; --line: #2a3431;
+    --accent: #4cc2ae; --accent-ink: #062420; --accent-soft: #163a34; --good: #63c98a; --warn: #e3a64a;
+    --warn-soft: #3a2c12; --bad: #f08a80; --chip: #222b29; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #101514; --panel: #171e1c; --ink: #e6ecea; --muted: #97a4a0; --line: #2a3431;
+  --accent: #4cc2ae; --accent-ink: #062420; --accent-soft: #163a34; --good: #63c98a; --warn: #e3a64a;
+  --warn-soft: #3a2c12; --bad: #f08a80; --chip: #222b29; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--font-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 64px;
+}
+.wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 20px; }
+a { color: var(--accent); }
+button, select, input, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+header { display: grid; gap: 6px; }
+.eyebrow { font: 600 12px/1.3 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font: 800 clamp(30px, 5vw, 46px)/1.02 var(--font-display); margin: 0; letter-spacing: -.02em; text-wrap: balance; }
+.brief { color: var(--muted); margin: 0; max-width: 70ch; }
+
+.counters { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.counter { background: var(--panel); border: 0; padding: 14px 16px; text-align: left; cursor: pointer; display: grid; gap: 2px; }
+.counter:hover { background: var(--accent-soft); }
+.counter[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.counter[aria-pressed="true"] .c-label { color: inherit; }
+.c-num { font: 600 28px/1.1 var(--font-mono); font-variant-numeric: tabular-nums; }
+.c-label { font-size: 13px; color: var(--muted); }
+
+.filters { display: grid; gap: 12px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+.f-row { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.f-label { font: 600 11px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); min-width: 56px; }
+.search { flex: 1 1 260px; min-width: 0; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+.seg { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.pill { border: 1px solid var(--line); background: var(--chip); border-radius: 999px; padding: 5px 12px; cursor: pointer; font-size: 13.5px; }
+.pill[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.toggle { display: inline-flex; gap: 6px; align-items: center; font-size: 13.5px; cursor: pointer; }
+select.sel { padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+.resultline { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 13.5px; }
+
+.queue { display: grid; gap: 10px; }
+.ticket { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; display: grid; grid-template-columns: 76px minmax(0, 1fr) 190px; }
+.ticket.is-done { opacity: .62; }
+.prio { border-right: 1px solid var(--line); padding: 14px 10px; display: grid; align-content: start; justify-items: center; gap: 6px; }
+.p-badge { font: 600 13px/1 var(--font-mono); padding: 5px 8px; border-radius: 6px; background: var(--chip); color: var(--muted); }
+.p-P1 .p-badge { background: var(--accent); color: var(--accent-ink); }
+.p-P2 .p-badge { background: var(--accent-soft); color: var(--accent); }
+.score { font: 600 22px/1 var(--font-mono); }
+.score small { display: block; font: 400 10px/1.4 var(--font-mono); color: var(--muted); text-align: center; letter-spacing: .06em; }
+.body { padding: 12px 16px; min-width: 0; display: grid; gap: 6px; }
+.ref { font: 400 11.5px/1 var(--font-mono); color: var(--muted); letter-spacing: .04em; display: flex; gap: 10px; flex-wrap: wrap; }
+.new { color: var(--accent); font-weight: 600; }
+.title { font: 600 17px/1.3 var(--font-body); margin: 0; overflow-wrap: anywhere; }
+.title a { color: var(--ink); text-decoration: none; }
+.title a:hover { color: var(--accent); text-decoration: underline; }
+.meta { color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 12.5px; padding: 2px 8px; border-radius: 5px; background: var(--chip); }
+.chip.mode-ni { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.chip.flag { background: var(--warn-soft); color: var(--warn); }
+.chip.why { background: transparent; border: 1px solid var(--line); }
+details.more summary { cursor: pointer; color: var(--muted); font-size: 13px; width: fit-content; }
+details.more[open] summary { margin-bottom: 6px; }
+.snippet { color: var(--muted); font-size: 13.5px; margin: 0 0 8px; max-width: 75ch; }
+.note { width: 100%; min-height: 54px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--bg); resize: vertical; }
+.side { border-left: 1px solid var(--line); padding: 12px 14px; display: grid; gap: 8px; align-content: start; }
+.sal { font: 600 15px/1.25 var(--font-mono); font-variant-numeric: tabular-nums; }
+.sal.unknown { color: var(--muted); font-weight: 400; font-size: 13px; }
+.sal.borderline { color: var(--warn); }
+.sal small { display: block; font: 400 11px/1.4 var(--font-body); color: var(--muted); }
+.status { width: 100%; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+.status[data-v="applied"], .status[data-v="interview"], .status[data-v="offer"] { border-color: var(--good); color: var(--good); font-weight: 600; }
+.open { display: block; text-align: center; padding: 7px 10px; border-radius: 8px; background: var(--accent); color: var(--accent-ink); text-decoration: none; font-weight: 600; font-size: 14px; }
+.open:hover { filter: brightness(1.08); }
+.morebtn { justify-self: center; padding: 9px 18px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); cursor: pointer; }
+.empty { padding: 32px; text-align: center; color: var(--muted); background: var(--panel); border: 1px dashed var(--line); border-radius: 10px; }
+
+.foot { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 20px; align-items: start; }
+.foot section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; min-width: 0; }
+.foot h2 { font: 700 18px/1.2 var(--font-display); margin: 0 0 8px; }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { text-align: left; padding: 5px 8px 5px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 600 11px/1.2 var(--font-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+td.n { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; }
+.err { color: var(--bad); font-size: 12px; }
+.small { font-size: 13px; color: var(--muted); }
+.btn { padding: 7px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--chip); cursor: pointer; }
+.backup { width: 100%; min-height: 70px; font: 12px/1.4 var(--font-mono); border: 1px solid var(--line); border-radius: 8px; padding: 8px; background: var(--bg); }
+.row-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; align-items: center; }
+
+@media (max-width: 760px) {
+  .counters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .counters .counter:last-child { grid-column: 1 / -1; }
+  .ticket { grid-template-columns: 58px minmax(0, 1fr); }
+  .side { grid-column: 1 / -1; border-left: 0; border-top: 1px solid var(--line); grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; }
+  .side .sal { grid-column: 1 / -1; }
+  .foot { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow" id="updated">Job queue</div>
+    <h1>Michal's job queue</h1>
+    <p class="brief">Remote roles open to UK residents and EU citizens, plus hybrid jobs you can commute to from Dungannon (Belfast, Lisburn, Craigavon). Paying £30,000 or more, or not saying. Ranked against your CV: IT support, field and deskside work, Microsoft 365 and Active Directory, Polish and English.</p>
+  </header>
+
+  <div class="counters" id="counters" role="group" aria-label="Quick views"></div>
+
+  <div class="filters" role="search">
+    <div class="f-row">
+      <input class="search" id="q" type="search" placeholder="Search title, company, location, skills…" aria-label="Search jobs">
+      <select class="sel" id="sort" aria-label="Sort by">
+        <option value="score">Best match first</option>
+        <option value="newest">Newest first</option>
+        <option value="salary">Highest salary first</option>
+      </select>
+    </div>
+    <div class="f-row"><span class="f-label">Where</span><div class="seg" id="f-mode"></div></div>
+    <div class="f-row"><span class="f-label">Track</span><div class="seg" id="f-family"></div></div>
+    <div class="f-row">
+      <span class="f-label">Show</span>
+      <select class="sel" id="f-status" aria-label="Application status">
+        <option value="active">Active (not rejected or hidden)</option>
+        <option value="new">Not looked at yet</option>
+        <option value="saved">Saved</option>
+        <option value="applied">Applied</option>
+        <option value="interview">Interviewing</option>
+        <option value="offer">Offer</option>
+        <option value="rejected">Rejected</option>
+        <option value="hidden">Not for me</option>
+        <option value="all">Everything</option>
+      </select>
+      <label class="toggle"><input type="checkbox" id="f-senior" checked> Hide senior roles</label>
+      <label class="toggle"><input type="checkbox" id="f-contract" checked> Hide poorly paid contracts</label>
+      <label class="toggle"><input type="checkbox" id="f-salary"> Only with salary shown</label>
+      <label class="toggle"><input type="checkbox" id="f-lang" checked> Hide jobs needing another language</label>
+    </div>
+  </div>
+
+  <div class="resultline"><span id="count"></span><button class="btn" id="reset" type="button">Reset filters</button></div>
+  <div class="queue" id="queue"></div>
+  <button class="morebtn" id="more" type="button" hidden>Show 40 more</button>
+
+  <div class="foot">
+    <section>
+      <h2>Where these jobs came from</h2>
+      <p class="small" id="srcnote"></p>
+      <div class="tbl"><table id="sources"><thead><tr><th>Source</th><th style="text-align:right">Fetched</th><th style="text-align:right">Kept</th><th>Notes</th></tr></thead><tbody></tbody></table></div>
+    </section>
+    <section>
+      <h2>Your tracker</h2>
+      <p class="small">Statuses and notes are saved in this browser only. Copy a backup now and then, and paste it back here on another device or browser.</p>
+      <div class="row-btns">
+        <button class="btn" id="copy" type="button">Copy backup</button>
+        <button class="btn" id="restore" type="button">Restore from box</button>
+        <span class="small" id="bmsg" role="status"></span>
+      </div>
+      <textarea class="backup" id="backup" aria-label="Tracker backup" placeholder="Paste a backup here, then press Restore"></textarea>
+    </section>
+  </div>
+</div>
+
+<script>
+const DATA = /*__JOBS_JSON__*/null;
+(function () {
+  const D = DATA || { jobs: [], sources: [], generated: null };
+  const JOBS = D.jobs;
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  // ---- per-browser tracker (localStorage may be unavailable: then it lives in memory for this visit)
+  const KEY = "jobqueue.tracker.v1";
+  let tracker = {};
+  try { tracker = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { tracker = {}; }
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(tracker)); } catch (e) {} };
+  let lastVisit = null;
+  try { lastVisit = localStorage.getItem("jobqueue.lastVisit"); localStorage.setItem("jobqueue.lastVisit", D.generated || ""); } catch (e) {}
+  const statusOf = (j) => (tracker[j.id] && tracker[j.id].status) || "new";
+
+  const generated = D.generated ? new Date(D.generated) : new Date();
+  const ageDays = (iso) => iso ? (generated - new Date(iso)) / 864e5 : null;
+  const isNew = (j) => lastVisit ? j.first_seen > lastVisit : ageDays(j.first_seen) < 1.05;
+
+  const FAMILIES = [["all", "All"], ["it_support", "IT support"], ["customer_tech", "Customer & technical"], ["sales", "Sales"], ["operations", "Ops & admin"], ["polish", "Polish-speaking"], ["other", "Other"]];
+  const MODES = [["all", "Anywhere"], ["remote", "Remote"], ["ni", "Near home (NI)"], ["uk", "Remote, UK named"]];
+  const DEFAULTS = { q: "", sort: "score", mode: "all", family: "all", status: "active", senior: true, contract: true, salary: false, lang: true, quick: null };
+  let F = Object.assign({}, DEFAULTS);
+  try { Object.assign(F, JSON.parse(localStorage.getItem("jobqueue.filters") || "{}"), { quick: null }); } catch (e) {}
+  let shown = 40;
+
+  const ELIG = { uk: "UK residents OK", region: "Europe / worldwide", unknown: "Location rules not stated", country: "One EU country only" };
+  const STATUSES = [["new", "Not looked at"], ["saved", "Saved"], ["applied", "Applied"], ["interview", "Interviewing"], ["offer", "Offer"], ["rejected", "Rejected"], ["hidden", "Not for me"]];
+
+  function k(n) { return n >= 1000 ? "£" + Math.round(n / 1000) + "k" : "£" + n; }
+  function salaryHTML(s) {
+    if (!s || s.hi == null) return `<div class="sal unknown">Salary not stated</div>`;
+    const range = s.lo === s.hi ? k(s.lo) : `${k(s.lo)}–${k(s.hi)}`;
+    const note = s.period && s.period !== "year" ? `<small>Worked out from ${s.period === "hour" ? "an hourly" : s.period === "day" ? "a day" : "a monthly"} rate</small>` : `<small>per year, in GBP</small>`;
+    return `<div class="sal ${s.status === "borderline" ? "borderline" : ""}">${range}${note}</div>`;
+  }
+  function ago(iso) {
+    const d = ageDays(iso);
+    if (d == null) return "date unknown";
+    if (d < 1) return "today";
+    if (d < 2) return "yesterday";
+    return Math.floor(d) + " days ago";
+  }
+  const isSenior = (j) => j.flags.includes("Senior level");
+  const needsLang = (j) => j.flags.some((f) => f.startsWith("Needs ") || f === "Advert written in German");
+  const badContract = (j) => j.flags.includes("Contract / temporary") || j.flags.includes("Part-time");
+
+  function passes(j, ignoreQuick) {
+    const st = statusOf(j);
+    if (F.status === "active" ? (st === "rejected" || st === "hidden") : F.status !== "all" && st !== F.status) return false;
+    if (F.mode === "remote" && j.mode !== "remote") return false;
+    if (F.mode === "ni" && j.mode !== "ni") return false;
+    if (F.mode === "uk" && !(j.mode === "remote" && j.elig === "uk")) return false;
+    if (F.family !== "all" && j.family !== F.family && !(F.family === "polish" && j.reasons.includes("Polish speakers wanted"))) return false;
+    if (F.senior && isSenior(j)) return false;
+    if (F.contract && badContract(j)) return false;
+    if (F.salary && j.salary.hi == null) return false;
+    if (F.lang && needsLang(j)) return false;
+    if (F.q) {
+      const hay = (j.title + " " + j.company + " " + j.location + " " + j.reasons.join(" ") + " " + j.snippet + " " + ((tracker[j.id] || {}).note || "")).toLowerCase();
+      if (!F.q.toLowerCase().split(/\s+/).every((w) => hay.includes(w))) return false;
+    }
+    if (!ignoreQuick && F.quick) {
+      if (F.quick === "new" && !isNew(j)) return false;
+      if (F.quick === "p1" && j.priority !== "P1") return false;
+      if (F.quick === "salary" && j.salary.status !== "meets") return false;
+      if (F.quick === "ni" && j.mode !== "ni") return false;
+    }
+    return true;
+  }
+
+  function counters() {
+    const base = JOBS.filter((j) => passes(j, true));
+    const applied = JOBS.filter((j) => ["applied", "interview", "offer"].includes(statusOf(j))).length;
+    const items = [
+      ["new", base.filter(isNew).length, lastVisit ? "New since your last visit" : "New today"],
+      ["p1", base.filter((j) => j.priority === "P1").length, "Top matches (P1)"],
+      ["salary", base.filter((j) => j.salary.status === "meets").length, "Salary £30k+ confirmed"],
+      ["ni", base.filter((j) => j.mode === "ni").length, "Near home"],
+      ["applied", applied, "Applied, interviewing or offered"],
+    ];
+    $("#counters").innerHTML = items.map(([id, n, label]) =>
+      `<button class="counter" type="button" data-q="${id}" aria-pressed="${F.quick === id}"><span class="c-num">${n}</span><span class="c-label">${label}</span></button>`).join("");
+  }
+
+  function ticket(j) {
+    const st = statusOf(j);
+    const t = tracker[j.id] || {};
+    const chips = [];
+    chips.push(j.mode === "ni" ? `<span class="chip mode-ni">Near home · hybrid/onsite</span>` : `<span class="chip">Remote · ${esc(ELIG[j.elig] || "")}</span>`);
+    j.reasons.filter((r) => !/^Open |Commutable|^Remote;|Listed for|based:/.test(r)).forEach((r) => chips.push(`<span class="chip why">${esc(r)}</span>`));
+    j.flags.forEach((f) => chips.push(`<span class="chip flag">${esc(f)}</span>`));
+    return `<article class="ticket p-${j.priority} ${["rejected", "hidden"].includes(st) ? "is-done" : ""}" data-id="${j.id}">
+      <div class="prio"><span class="p-badge">${j.priority}</span><span class="score">${j.score}<small>MATCH</small></span></div>
+      <div class="body">
+        <div class="ref"><span>JQ-${j.id.slice(0, 6).toUpperCase()}</span><span>${esc(j.sources.join(" + "))}</span><span>posted ${ago(j.posted || j.first_seen)}</span>${isNew(j) ? '<span class="new">NEW</span>' : ""}</div>
+        <h3 class="title"><a href="${esc(j.url)}" target="_blank" rel="noopener">${esc(j.title)}</a></h3>
+        <div class="meta">${esc(j.company)} · ${esc(j.location || "Location not given")}</div>
+        <div class="chips">${chips.join("")}</div>
+        <details class="more"${t.note ? " open" : ""}><summary>${t.note ? "Your notes" : "Details and notes"}</summary>
+          ${j.snippet ? `<p class="snippet">${esc(j.snippet)}</p>` : ""}
+          <textarea class="note" id="note-${j.id}" data-note="${j.id}" placeholder="Notes: contact, follow-up date, interview prep…">${esc(t.note || "")}</textarea>
+        </details>
+      </div>
+      <div class="side">
+        ${salaryHTML(j.salary)}
+        <select class="status" id="st-${j.id}" data-status="${j.id}" data-v="${st}" aria-label="Status for ${esc(j.title)}">
+          ${STATUSES.map(([v, l]) => `<option value="${v}"${v === st ? " selected" : ""}>${l}</option>`).join("")}
+        </select>
+        <a class="open" href="${esc(j.url)}" target="_blank" rel="noopener">Open advert</a>
+      </div>
+    </article>`;
+  }
+
+  function render() {
+    try { const { quick, ...keep } = F; localStorage.setItem("jobqueue.filters", JSON.stringify(keep)); } catch (e) {}
+    counters();
+    $("#f-mode").innerHTML = MODES.map(([v, l]) => `<button class="pill" type="button" data-mode="${v}" aria-pressed="${F.mode === v}">${l}</button>`).join("");
+    $("#f-family").innerHTML = FAMILIES.map(([v, l]) => `<button class="pill" type="button" data-family="${v}" aria-pressed="${F.family === v}">${l}</button>`).join("");
+    let list = JOBS.filter((j) => passes(j));
+    if (F.sort === "newest") list.sort((a, b) => String(b.posted || b.first_seen).localeCompare(String(a.posted || a.first_seen)));
+    else if (F.sort === "salary") list.sort((a, b) => (b.salary.hi || 0) - (a.salary.hi || 0) || b.score - a.score);
+    else list.sort((a, b) => b.score - a.score || String(b.posted).localeCompare(String(a.posted)));
+    $("#count").textContent = `${list.length} of ${JOBS.length} jobs match these filters`;
+    $("#queue").innerHTML = list.length ? list.slice(0, shown).map(ticket).join("")
+      : `<div class="empty">No jobs match these filters. Try "Anywhere", the "All" track, or Reset filters.</div>`;
+    $("#more").hidden = list.length <= shown;
+    $("#more").textContent = `Show ${Math.min(40, list.length - shown)} more (${list.length - shown} left)`;
+  }
+
+  // ---- static parts
+  const fmt = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Europe/London" });
+  $("#updated").textContent = D.generated ? `Job queue · updated ${fmt.format(generated)}` : "Job queue · no data yet";
+  const live = D.sources.filter((s) => !s.skipped);
+  $("#srcnote").textContent = `${live.length} sources checked on the last run. Jobs are removed when they are older than 45 days. Salaries in other currencies are converted to pounds at ${D.rates_live ? "that day's ECB rates" : "approximate rates"}.`;
+  $("#sources tbody").innerHTML = D.sources.map((s) => `<tr><td>${esc(s.name)}${s.companies ? ` <span class="small">(${s.companies} companies)</span>` : ""}</td><td class="n">${s.fetched ?? "–"}</td><td class="n">${s.kept}</td><td>${s.skipped ? '<span class="small">Not set up (needs an API key)</span>' : s.error ? `<span class="err">${esc(s.error.slice(0, 140))}</span>` : '<span class="small">OK</span>'}</td></tr>`).join("");
+
+  // ---- events
+  $("#q").value = F.q; $("#sort").value = F.sort; $("#f-status").value = F.status;
+  $("#f-senior").checked = F.senior; $("#f-contract").checked = F.contract; $("#f-salary").checked = F.salary; $("#f-lang").checked = F.lang;
+  let qt;
+  $("#q").addEventListener("input", (e) => { clearTimeout(qt); qt = setTimeout(() => { F.q = e.target.value.trim(); shown = 40; render(); }, 150); });
+  $("#sort").addEventListener("change", (e) => { F.sort = e.target.value; render(); });
+  $("#f-status").addEventListener("change", (e) => { F.status = e.target.value; shown = 40; render(); });
+  [["#f-senior", "senior"], ["#f-contract", "contract"], ["#f-salary", "salary"], ["#f-lang", "lang"]].forEach(([id, key]) =>
+    $(id).addEventListener("change", (e) => { F[key] = e.target.checked; shown = 40; render(); }));
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    if (b.dataset.mode) { F.mode = b.dataset.mode; shown = 40; render(); }
+    else if (b.dataset.family) { F.family = b.dataset.family; shown = 40; render(); }
+    else if (b.dataset.q) {
+      if (b.dataset.q === "applied") { F.status = F.status === "applied" ? "active" : "applied"; F.quick = null; $("#f-status").value = F.status; }
+      else F.quick = F.quick === b.dataset.q ? null : b.dataset.q;
+      shown = 40; render();
+    }
+  });
+  $("#more").addEventListener("click", () => { shown += 40; render(); });
+  $("#reset").addEventListener("click", () => {
+    F = Object.assign({}, DEFAULTS); shown = 40;
+    $("#q").value = ""; $("#sort").value = "score"; $("#f-status").value = "active";
+    $("#f-senior").checked = true; $("#f-contract").checked = true; $("#f-salary").checked = false; $("#f-lang").checked = true;
+    render();
+  });
+  $("#queue").addEventListener("change", (e) => {
+    const id = e.target.dataset.status;
+    if (!id) return;
+    tracker[id] = Object.assign(tracker[id] || {}, { status: e.target.value, updated: new Date().toISOString() });
+    e.target.dataset.v = e.target.value;
+    save(); counters();
+    e.target.closest(".ticket").classList.toggle("is-done", ["rejected", "hidden"].includes(e.target.value));
+  });
+  $("#queue").addEventListener("input", (e) => {
+    const id = e.target.dataset.note;
+    if (!id) return;
+    tracker[id] = Object.assign(tracker[id] || {}, { note: e.target.value, updated: new Date().toISOString() });
+    save();
+  });
+
+  // ---- backup / restore
+  $("#copy").addEventListener("click", () => {
+    const text = JSON.stringify(tracker);
+    $("#backup").value = text;
+    const done = () => { $("#bmsg").textContent = "Backup copied"; };
+    const fallback = () => { $("#backup").select(); $("#bmsg").textContent = "Backup is in the box; copy it from there"; };
+    try { navigator.clipboard.writeText(text).then(done, fallback); } catch (e) { fallback(); }
+  });
+  $("#restore").addEventListener("click", () => {
+    try {
+      const incoming = JSON.parse($("#backup").value);
+      if (!incoming || typeof incoming !== "object" || Array.isArray(incoming)) throw new Error();
+      Object.assign(tracker, incoming); save(); render();
+      $("#bmsg").textContent = `Restored ${Object.keys(incoming).length} tracked jobs`;
+    } catch (e) { $("#bmsg").textContent = "That text is not a tracker backup. Use Copy backup to make one."; }
+  });
+
+  render();
+})();
+</script>

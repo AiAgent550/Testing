@@ -1,0 +1,59 @@
+name: Daily job search
+
+on:
+  schedule:
+    - cron: "23 6 * * *"   # every day, 06:23 UTC
+  workflow_dispatch: {}     # "Run workflow" button in the Actions tab
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: job-search
+  cancel-in-progress: false
+
+jobs:
+  search:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: job-dashboard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Unit tests
+        run: python -m unittest discover -s tests -t .
+      - name: Search for jobs
+        env:
+          ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
+          ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
+          ADZUNA_MAX_CALLS: ${{ vars.ADZUNA_MAX_CALLS || '2' }}
+          REED_API_KEY: ${{ secrets.REED_API_KEY }}
+        run: python -m jobsearch
+      - name: Save results to the repo
+        run: |
+          git config user.name "job-search-bot"
+          git config user.email "job-search-bot@users.noreply.github.com"
+          git add data/jobs.json site/index.html
+          git diff --cached --quiet || git commit -m "Job search results $(date -u +%Y-%m-%d)"
+          git push
+      - name: Upload site for GitHub Pages
+        if: vars.PUBLISH_PAGES == 'true'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: job-dashboard/site
+
+  pages:
+    needs: search
+    if: vars.PUBLISH_PAGES == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

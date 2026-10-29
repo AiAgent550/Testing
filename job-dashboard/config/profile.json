@@ -1,0 +1,51 @@
+{
+  "_comment": "Search profile built from the CV. No contact details live here. Edit freely: every list is plain keywords, matched case-insensitively.",
+
+  "summary": "IT support / field technician (ICT Services, current), IT Support Technician (SuperMicro), remote diagnostics support, 5+ years freelance computer technician. Polish native, English fluent. UK settled status + Polish (EU) citizen.",
+
+  "min_salary_gbp": 30000,
+  "good_contract_min_gbp": 45000,
+  "min_score": 20,
+  "max_age_days": 45,
+
+  "home": "Dungannon",
+  "hybrid_places": ["belfast", "lisburn", "dungannon", "moygashel", "coalisland", "cookstown", "craigavon", "portadown", "lurgan", "armagh", "banbridge", "antrim", "newtownabbey", "holywood", "dunmurry", "hillsborough", "moira", "magherafelt", "newry", "county tyrone", "co. tyrone", "county armagh", "co. armagh"],
+
+  "families": {
+    "it_support": {
+      "label": "IT support",
+      "points": 50,
+      "titles": ["it support", "it technician", "it engineer", "it analyst", "it officer", "it specialist", "it administrator", "it operations", "it service", "ict", "service desk", "servicedesk", "help desk", "helpdesk", "desktop support", "desktop engineer", "deskside", "desk side", "end user", "end-user", "euc", "field engineer", "field technician", "field service", "field support", "onsite support", "on-site support", "1st line", "2nd line", "3rd line", "first line", "second line", "tier 1", "tier 2", "l1 support", "l2 support", "support technician", "support engineer", "technical support", "tech support", "systems administrator", "system administrator", "sysadmin", "infrastructure support", "noc", "network support", "network technician", "data center technician", "data centre technician", "datacenter technician", "hardware technician", "computer technician", "workplace technology", "modern workplace", "m365", "microsoft 365", "intune", "it coordinator", "it generalist"]
+    },
+    "customer_tech": {
+      "label": "Customer & technical",
+      "points": 44,
+      "titles": ["technical support specialist", "product support", "application support", "applications support", "software support", "customer support", "customer service", "support specialist", "support agent", "support advisor", "support analyst", "support representative", "support associate", "customer success", "customer experience", "client support", "client success", "implementation specialist", "implementation consultant", "onboarding specialist", "onboarding manager", "solutions consultant", "support consultant", "technical account manager", "technical consultant", "customer operations", "trust & safety", "trust and safety", "community support", "escalation"]
+    },
+    "sales": {
+      "label": "Sales",
+      "points": 38,
+      "titles": ["sales development", "business development representative", "business development executive", "business development associate", "sdr", "bdr", "account executive", "inside sales", "sales representative", "sales executive", "sales associate", "sales specialist", "account manager", "partner manager", "channel sales", "renewals", "lead generation", "pre-sales", "presales", "sales engineer", "solutions engineer", "it sales", "telesales"]
+    },
+    "operations": {
+      "label": "Ops & admin",
+      "points": 28,
+      "titles": ["operations associate", "operations specialist", "operations coordinator", "project coordinator", "service coordinator", "service delivery", "logistics coordinator", "asset", "procurement", "it procurement", "virtual assistant", "data entry", "qa tester", "quality assurance", "test analyst", "content moderator"]
+    }
+  },
+
+  "skills": ["microsoft 365", "office 365", "o365", "active directory", "azure ad", "entra", "intune", "exchange", "sharepoint", "microsoft teams", "windows 10", "windows 11", "windows server", "vmware", "hyper-v", "tcp/ip", "dns", "dhcp", "vpn", "networking", "routers", "switches", "wi-fi", "wifi", "ticketing", "servicenow", "jira", "zendesk", "freshdesk", "freshservice", "hardware", "server", "servers", "printers", "laptops", "imaging", "sccm", "autopilot", "powershell", "troubleshoot", "troubleshooting", "root cause", "itil", "comptia", "remote support", "diagnostics", "customer-facing", "driving licence", "driving license", "supermicro", "data migration"],
+
+  "exclude_titles": ["software engineer", "software developer", "developer", "frontend", "front-end", "backend", "back-end", "full stack", "fullstack", "full-stack", "data scientist", "machine learning", "ml engineer", "ai engineer", "research scientist", "data engineer", "devops engineer", "site reliability", "sre", "security engineer", "platform engineer", "cloud architect", "solutions architect", "designer", "ux ", "ui ", "copywriter", "lawyer", "attorney", "counsel", "paralegal", "nurse", "physician", "doctor", "therapist", "psychologist", "pharmac", "dentist", "veterinar", "accountant", "bookkeeper", "controller", "tax ", "actuar", "teacher", "tutor", "professor", "lecturer", "recruiter", "talent acquisition", "hr business partner", "people partner", "marketing manager", "growth marketing", "seo", "content writer", "video editor", "animator", "game designer", "chief", "vice president", "vp ", "head of", "director"],
+
+  "senior_words": ["senior", "sr.", "sr ", "staff", "principal", "lead", "manager", "architect", "expert"],
+  "manager_ok": ["account manager", "customer success manager", "partner manager", "onboarding manager", "technical account manager"],
+  "junior_words": ["junior", "jr", "entry level", "entry-level", "associate", "graduate", "trainee", "apprentice", "1st line", "first line", "tier 1", "l1", "level 1", "2nd line", "second line"],
+
+  "bonus_languages": ["polish"],
+  "other_languages": ["german", "french", "dutch", "spanish", "italian", "swedish", "danish", "norwegian", "finnish", "czech", "slovak", "hungarian", "romanian", "bulgarian", "greek", "turkish", "hebrew", "arabic", "japanese", "korean", "mandarin", "cantonese", "chinese", "russian", "ukrainian", "portuguese", "flemish", "estonian", "latvian", "lithuanian", "croatian", "serbian", "slovenian", "hindi", "thai", "vietnamese", "indonesian", "malay", "tagalog"],
+
+  "search_terms": ["it support", "service desk", "help desk", "desktop support", "technical support", "field engineer", "customer support", "customer success", "sales development", "account executive", "polish"],
+
+  "currency_to_gbp": {"GBP": 1.0, "EUR": 0.86, "USD": 0.75, "PLN": 0.20, "CHF": 0.93, "SEK": 0.072, "NOK": 0.07, "DKK": 0.115, "CZK": 0.034, "HUF": 0.0021, "RON": 0.17, "CAD": 0.54, "AUD": 0.49, "NZD": 0.45, "INR": 0.009}
+}
