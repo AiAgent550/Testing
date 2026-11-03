@@ -7,7 +7,7 @@ const { check, done } = checker("jobs");
 const call = await signIn();
 
 const SEED = { booking: "bkg_jobseed0000000000001", booking2: "bkg_jobseed0000000000002", cancelled: "bkg_jobseed0000000000003", vehicle: "veh_jobseed0000000000001", customer: "cus_jobseed0000000000001" };
-const KNOWN_TOOLS = ["Magic Motorsport Flex", "Transdata", "Ioprog", "VVDI Prog", "Launch X431 IMMO", "Abrites (Mercedes-Benz)", "Workshop diagnostics"];
+const KNOWN_TOOLS = ["Magic Motorsport Flex", "Transdata", "IO Terminal", "VVDI Prog", "Launch X431 IMMO", "Abrites (Mercedes-Benz)", "Workshop diagnostics"];
 
 // ---- a tiny valid PNG (1x1, RGB) built by hand ----
 const CRC_TABLE = Array.from({ length: 256 }, (_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; return c >>> 0; });

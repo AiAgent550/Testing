@@ -21,7 +21,7 @@ interface Ctx { mercedes: boolean }
 interface Rule { id: string; test: RegExp; build(ctx: Ctx): Piece }
 
 const T = (tool: string, fn: string, why: string): Tool => ({ tool, function: fn, why });
-const AB = "Abrites (Mercedes-Benz)", FLEX = "Magic Motorsport Flex", TD = "Transdata", IO = "Ioprog",
+const AB = "Abrites (Mercedes-Benz)", FLEX = "Magic Motorsport Flex", TD = "Transdata", IO = "IO Terminal",
   VVDI = "VVDI Prog", X431 = "Launch X431 IMMO", DIAG = "Workshop diagnostics";
 
 const RULES: Rule[] = [

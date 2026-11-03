@@ -43,9 +43,9 @@ export const KNOWLEDGE: readonly KnowledgeTool[] = [
     ],
   },
   {
-    name: "Ioprog",
+    name: "IO Terminal",
     status: "available",
-    aliases: ["IO prog", "I/O Prog", "Ioprog Godiag"],
+    aliases: ["IO-Terminal", "IOTerminal", "IO Terminal multi tool"],
     summary: "ECU, BSI and EEPROM programming.",
     functions: [
       "ECU reading/writing on the bench",

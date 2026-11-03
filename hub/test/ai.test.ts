@@ -19,7 +19,7 @@ describe("knowledge base", () => {
     expect(findTool("Abrites VAG")!.status).toBe("coming_soon");
     expect(findTool("Abrites BMW")!.status).toBe("coming_soon");
     expect(AVAILABLE_TOOL_NAMES).not.toContain("Abrites (VW Group)");
-    expect(AVAILABLE_TOOL_NAMES).toEqual(expect.arrayContaining(["Magic Motorsport Flex", "Transdata", "Ioprog", "VVDI Prog", "Launch X431 IMMO", "Workshop diagnostics"]));
+    expect(AVAILABLE_TOOL_NAMES).toEqual(expect.arrayContaining(["Magic Motorsport Flex", "Transdata", "IO Terminal", "VVDI Prog", "Launch X431 IMMO", "Workshop diagnostics"]));
   });
   it("finds tools by alias regardless of case and punctuation", () => {
     expect(findTool("magic motorsport")?.name).toBe("Magic Motorsport Flex");
@@ -124,8 +124,8 @@ describe("suggestion sanitiser", () => {
     expect(sanitiseSuggestion(null)).toBeNull();
     expect(sanitiseSuggestion({ summary: "x" })).toBeNull();
     expect(sanitiseSuggestion({ ...base, recommended_tools: [], confidence: "certain" })).toBeNull();
-    expect(sanitiseSuggestion({ ...base, recommended_tools: [{ tool: "Ioprog" }] })).toBeNull();
-    expect(sanitiseSuggestion({ ...base, recommended_tools: "Ioprog" })).toBeNull();
+    expect(sanitiseSuggestion({ ...base, recommended_tools: [{ tool: "IO Terminal" }] })).toBeNull();
+    expect(sanitiseSuggestion({ ...base, recommended_tools: "IO Terminal" })).toBeNull();
   });
 });
 
