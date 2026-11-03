@@ -128,6 +128,7 @@ export const KNOWLEDGE: readonly KnowledgeTool[] = [
       "Battery, charging, power supply and earth checks",
       "Wiring and connector inspection, continuity and voltage tests",
       "Road test and mechanical inspection",
+      "ABS / ESP pumps: fault diagnosis, control module repair, and replacement units fitted, coded and adapted (bleed and adaptation routines on the scan tool)",
     ],
   },
 ];
