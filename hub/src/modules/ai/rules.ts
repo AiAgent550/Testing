@@ -257,13 +257,12 @@ const RULES: Rule[] = [
   },
   {
     id: "service",
-    test: /\b(service (light|reset|indicator)|assyst|sbc|parking brake|epb|hybrid battery|oil service)\b/,
+    test: /\b(service (light|reset|indicator)|assyst|sbc|parking brake|epb|oil service)\b/,
     build: ({ mercedes }) => ({
       label: "service functions",
       causes: [],
       tools: mercedes
-        ? [T(AB, "Service functions: ASSYST reset, SBC counter, electronic parking brake", "Mercedes service resets"),
-          T(AB, "Hybrid batteries: reset and unlock", "Mild and plug-in hybrid battery functions")]
+        ? [T(AB, "Service functions: ASSYST reset, SBC counter, electronic parking brake", "Mercedes service resets")]
         : [T(DIAG, "Service reset and parking brake functions on the scan tool", "Standard service functions")],
       steps: ["Carry out the service work", "Run the reset or service function", "Check for warning lights"],
       cautions: [],

@@ -248,8 +248,6 @@ export const RULES_PL: Record<string, string> = {
   "Check for warning lights": "Sprawdź kontrolki",
   "Service functions: ASSYST reset, SBC counter, electronic parking brake": "Funkcje serwisowe: reset ASSYST, licznik SBC, elektryczny hamulec postojowy",
   "Mercedes service resets": "Resety serwisowe Mercedesa",
-  "Hybrid batteries: reset and unlock": "Akumulatory hybrydowe: reset i odblokowanie",
-  "Mild and plug-in hybrid battery functions": "Funkcje akumulatorów mild hybrid i plug-in",
   "Service reset and parking brake functions on the scan tool": "Reset serwisowy i funkcje hamulca postojowego w testerze",
   "Standard service functions": "Standardowe funkcje serwisowe",
   "general fault": "usterka ogólna",

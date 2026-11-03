@@ -99,7 +99,6 @@ export const KNOWLEDGE: readonly KnowledgeTool[] = [
       "Variant coding: read, change and restore variant coding on any module",
       "Retrofits: Apple CarPlay, front and 360 cameras, AMG start screen, sunroof and seat settings",
       "Service functions: ASSYST resets, 7G-Tronic adaptation reset, SBC brake counter reset, DPF regeneration, electronic parking brake",
-      "Hybrid batteries: battery reset and unlock on mild and plug-in hybrid models",
     ],
   },
   {
