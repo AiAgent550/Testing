@@ -3,6 +3,7 @@
 import {
   api, chip, empty, field, fmtAgo, fmtPhone, formatReg, h, icon, loading, pageHead, plate, segmented, sheet, showFieldErrors, t, toast, translatable, N_, jobTitle,
 } from "../core.js";
+import { REG_OUTCOME, customerBlock, regField } from "../edit.js";
 
 const STATUS_LABELS = { open: t("Open"), in_progress: t("In progress"), waiting_parts: t("Waiting for parts"), completed: t("Completed"), cancelled: t("Cancelled") };
 const MOVED = {
@@ -123,6 +124,7 @@ async function renderDetail(view, id, { navigate, refreshCounts }) {
     api("/api/ai/status").catch(() => ({ available: false })),
   ]);
   const base = `/api/jobs/${encodeURIComponent(id)}`;
+  const reload = () => { refreshCounts?.(); return renderDetail(view, id, { navigate, refreshCounts }); };
 
   const statusBox = h("div.stack");
   const notesBox = h("div.stack");
@@ -139,7 +141,9 @@ async function renderDetail(view, id, { navigate, refreshCounts }) {
   // ---- header ----
   const v = d.vehicle;
   const head = h("div.stack", { style: "gap:12px;margin-bottom:22px" },
-    h("div", h("a.btn.small.ghost", { href: "#/jobs", style: "padding-left:4px" }, icon("back"), t("Jobs"))),
+    h("div", { style: "display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap" },
+      h("a.btn.small.ghost", { href: "#/jobs", style: "padding-left:4px" }, icon("back"), t("Jobs")),
+      h("button.btn.small", { type: "button", onclick: () => editJobSheet(d, users, reload) }, t("Edit job"))),
     v?.reg ? h("div", h("span.plate", { style: "font-size:24px;padding:6px 14px;border-radius:7px" }, formatReg(v.reg))) : null,
     v ? h("p", { style: "margin:0;font-size:17px;font-weight:600" }, carLine(v, true) || t("Car details not looked up yet")) : null,
     h("p.kicker", `${d.job.ref}${d.booking ? ` · ${t("booking {ref}", { ref: d.booking.ref })}` : ""}`),
@@ -247,11 +251,39 @@ async function renderDetail(view, id, { navigate, refreshCounts }) {
       sectionTitle(t("Notes")),
       d.notes.length
         ? h("div.list", d.notes.map(n => h("div.row",
-          h("span.title", n.author_name || t("Someone")), h("span.muted.small", fmtAgo(n.created_at)),
-          h("div", { style: "grid-column:1/-1" }, translatable(n.body)))))
+          h("span.title", n.author_name || t("Someone")),
+          h("span.muted.small", n.edited_at ? `${fmtAgo(n.created_at)} · ${t("edited")}` : fmtAgo(n.created_at)),
+          h("div", { style: "grid-column:1/-1" }, translatable(n.body)),
+          n.mine ? h("div", { style: "grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap" },
+            h("button.btn.small.ghost", { type: "button", onclick: () => editNote(n) }, t("Edit")),
+            h("button.btn.small.ghost", { type: "button", style: "color:var(--bad)", onclick: async () => {
+              if (!confirm(t("Delete this note?"))) return;
+              try {
+                await api(`${base}/notes/${encodeURIComponent(n.id)}`, { method: "DELETE" });
+                d.notes = d.notes.filter(x => x.id !== n.id);
+                drawNotes(); toast(t("Note deleted."));
+              } catch (err) { toast(err.message, "bad"); }
+            } }, t("Delete"))) : null)))
         : h("p.muted.small", { style: "margin:0" }, t("No notes yet.")),
       form,
     );
+  }
+
+  function editNote(n) {
+    const input = h("textarea.input", { name: "body", rows: 5, maxlength: 4000 }, n.body);
+    const form = h("form.form", { id: "edit-note", novalidate: true }, field(t("Note"), input));
+    const save = h("button.btn.primary", { type: "submit", form: "edit-note" }, t("Save"));
+    const close = sheet(t("Edit note"), form, [save]);
+    form.addEventListener("submit", async e => {
+      e.preventDefault();
+      if (!input.value.trim()) return input.focus();
+      save.disabled = true;
+      try {
+        const { note } = await api(`${base}/notes/${encodeURIComponent(n.id)}`, { method: "PATCH", body: { body: input.value } });
+        d.notes = d.notes.map(x => (x.id === n.id ? { ...x, ...note, mine: true, author_name: x.author_name } : x));
+        close(); drawNotes(); toast(t("Note updated."));
+      } catch (err) { showFieldErrors(form, err); toast(err.message, "bad"); save.disabled = false; }
+    });
   }
 
   // ---- photos ----
@@ -372,4 +404,70 @@ async function renderDetail(view, id, { navigate, refreshCounts }) {
     ),
   );
   document.title = `${v?.reg ? formatReg(v.reg) : d.job.ref} · ${t("Jobs")} · Curve Hub`;
+}
+
+// ---------- edit job ----------
+function editJobSheet(d, users, reload) {
+  const job = d.job, v = d.vehicle;
+  const shownTitle = jobTitle(job.title); // in the reader's language; only saved when they actually change it
+  const title = h("input.input", { name: "title", maxlength: 220, required: true, value: shownTitle });
+  const reg = regField(v?.reg || "");
+  const description = h("textarea.input", { name: "description", rows: 4, maxlength: 4000 }, job.description || "");
+  const cust = customerBlock(d.customer);
+  const assignee = h("select.input", { name: "assigned_to" },
+    h("option", { value: "" }, t("Nobody yet")),
+    users.map(u => h("option", { value: u.id, selected: u.id === job.assigned_to }, u.name)));
+  const mileage = h("input.input", { name: "mileage", inputmode: "numeric", pattern: "[0-9]*", maxlength: 6, autocomplete: "off", value: job.mileage ?? "" });
+  const vinInput = h("input.input.mono", { name: "vin", maxlength: 17, autocapitalize: "characters", autocomplete: "off", spellcheck: "false", value: v?.vin || "", style: "text-transform:uppercase;letter-spacing:.08em" });
+  const form = h("form.form", { id: "edit-job", novalidate: true },
+    field(t("What's the job?"), title),
+    reg.el,
+    field(t("Issue"), description),
+    h("div.stack", { style: "gap:10px" }, h("h3", { style: "margin:6px 0 0;font:600 13px/1.3 var(--body);color:var(--mist)" }, t("Customer")), cust.el),
+    field(t("Assigned to"), assignee),
+    h("div.form-row", field(t("Mileage"), mileage), field("VIN", vinInput)),
+  );
+  const save = h("button.btn.primary", { type: "submit", form: "edit-job" }, t("Save"));
+  const close = sheet(t("Edit job {ref}", { ref: job.ref }), form, [save]);
+
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    showFieldErrors(form, null);
+    const body = {};
+    if (!title.value.trim()) return showFieldErrors(form, { fields: { title: t("Required.") } });
+    if (title.value.trim() !== shownTitle) body.title = title.value.trim();
+    if (description.value.trim() !== (job.description || "")) body.description = description.value.trim();
+    if (reg.changed()) {
+      const r = reg.value();
+      if (r && (r.length < 2 || r.length > 8)) return showFieldErrors(form, { fields: { reg: t("Enter a valid registration.") } });
+      if (!r && !confirm(t("Remove the car from this job?"))) return;
+      body.reg = r;
+    }
+    if ((assignee.value || null) !== (job.assigned_to || null)) body.assigned_to = assignee.value || null;
+    const m = mileage.value.trim();
+    if (m !== String(job.mileage ?? "")) {
+      if (m && !/^\d{1,6}$/.test(m)) return showFieldErrors(form, { fields: { mileage: t("Whole miles, up to 999999.") } });
+      body.mileage = m ? Number(m) : null;
+    }
+    const vn = vinInput.value.trim().toUpperCase();
+    const vinChanged = vn !== (v?.vin || "");
+    if (vinChanged && vn && !/^[A-HJ-NPR-Z0-9]{17}$/.test(vn)) return showFieldErrors(form, { fields: { vin: t("A VIN is 17 letters and numbers (no I, O or Q).") } });
+
+    save.disabled = true;
+    try {
+      const c = await cust.resolve();
+      if (c.customerId && c.customerId !== job.customer_id) body.customer_id = c.customerId;
+      let outcome = null;
+      if (Object.keys(body).length) outcome = (await api(`/api/jobs/${encodeURIComponent(job.id)}`, { method: "PATCH", body })).reg_change;
+      await cust.saveDetails(c.customerId, c.patch);
+      if (vinChanged && (v || (outcome && outcome !== "cleared"))) await api(`/api/jobs/${encodeURIComponent(job.id)}/vehicle`, { method: "PATCH", body: { vin: vn || null } });
+      close();
+      toast(outcome && REG_OUTCOME[outcome] ? REG_OUTCOME[outcome]() : t("Job updated."));
+      await reload();
+    } catch (err) {
+      showFieldErrors(form, err);
+      toast(err.message, "bad");
+      save.disabled = false;
+    }
+  });
 }

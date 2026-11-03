@@ -3,6 +3,7 @@ import {
   SERVICE_LABELS, api, chip, empty, field, fmtAgo, fmtDate, fmtDateTime, fmtMiles, fmtPhone, h, icon, loading,
   pageHead, plate, segmented, sheet, showFieldErrors, t, toast, translatable,
 } from "../core.js";
+import { REG_OUTCOME, customerBlock, regField } from "../edit.js";
 
 const STATUS_LABELS = {
   requested: t("Request"), confirmed: t("Confirmed"), in_progress: t("In progress"), completed: t("Completed"), cancelled: t("Cancelled"), no_show: t("No-show"),
@@ -251,7 +252,7 @@ async function renderDetail(view, id, ctx) {
   // ---- booking details ----
   const detailsCard = h("section.card.stack",
     h("div", { style: "display:flex;justify-content:space-between;align-items:center;gap:10px" }, h("h2.h2", t("Booking")),
-      h("button.btn.small", { type: "button", onclick: () => editBooking(b, reload) }, t("Edit"))),
+      h("button.btn.small", { type: "button", onclick: () => editBooking(b, c, v, reload) }, t("Edit"))),
     h("dl.kv",
       h("dt", t("Service")), h("dd", serviceLabel(b.service)),
       h("dt", t("Where")), h("dd", b.location === "mobile" ? t("Mobile: {address}", { address: b.address || t("address not given") }) : t("At the workshop")),
@@ -337,11 +338,15 @@ async function renderDetail(view, id, ctx) {
   );
 }
 
-function editBooking(b, reload) {
+function editBooking(b, c, v, reload) {
   let location = b.location;
   const address = field(t("Address for the visit"), h("textarea.input", { name: "address", rows: 2 }, b.address || ""));
   address.hidden = location !== "mobile";
+  const reg = regField(v?.reg || "");
+  const cust = customerBlock(c);
   const form = h("form.form", { id: "edit-booking", novalidate: true },
+    h("div.stack", { style: "gap:10px" }, h("h3", { style: "margin:0;font:600 13px/1.3 var(--body);color:var(--mist)" }, t("Customer")), cust.el),
+    reg.el,
     h("div.form-row",
       field(t("Service"), serviceSelect(b.service)),
       field(t("Preferred date"), h("input.input", { name: "preferred_date", type: "date", value: b.preferred_date || "" })),
@@ -351,17 +356,29 @@ function editBooking(b, reload) {
     address,
   );
   const save = h("button.btn.primary", { type: "submit", form: "edit-booking" }, t("Save"));
-  const close = sheet(t("Booking details"), form, [save]);
+  const close = sheet(t("Edit booking {ref}", { ref: b.ref }), form, [save]);
   form.addEventListener("submit", async e => {
     e.preventDefault();
-    const body = { ...Object.fromEntries(new FormData(form)), location };
-    if (location !== "mobile") body.address = "";
+    showFieldErrors(form, null);
+    const f = Object.fromEntries(new FormData(form));
+    const body = { service: f.service, preferred_date: f.preferred_date, description: f.description, location, address: location === "mobile" ? f.address : "" };
+    if (reg.changed()) {
+      const r = reg.value();
+      if (r && (r.length < 2 || r.length > 8)) return showFieldErrors(form, { fields: { reg: t("Enter a valid registration.") } });
+      if (!r && !confirm(t("Remove the car from this booking?"))) return;
+      body.reg = r;
+    }
+    save.disabled = true;
     try {
-      await api(`/api/bookings/${b.id}`, { method: "PATCH", body });
+      const picked = await cust.resolve();
+      if (picked.customerId && picked.customerId !== c.id) body.customer_id = picked.customerId;
+      const res = await api(`/api/bookings/${b.id}`, { method: "PATCH", body });
+      await cust.saveDetails(picked.customerId, picked.patch);
       close();
-      toast(t("Booking updated."));
+      const outcome = res.reg_change;
+      toast(outcome && REG_OUTCOME[outcome] ? REG_OUTCOME[outcome]() : t("Booking updated."));
       await reload();
-    } catch (err) { showFieldErrors(form, err); toast(err.message, "bad"); }
+    } catch (err) { showFieldErrors(form, err); toast(err.message, "bad"); save.disabled = false; }
   });
 }
 

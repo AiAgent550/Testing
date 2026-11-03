@@ -163,3 +163,87 @@ export function publicVehicle(v: VehicleRow) {
   }
   return { ...rest, mot_tests };
 }
+
+// ---------- correcting a registration on a job or booking ----------
+
+export type RegChangeOutcome = "unchanged" | "cleared" | "relinked" | "corrected" | "created";
+
+/**
+ * Decides what a registration change means for the stored cars (pure, so every branch is unit-tested):
+ * - the same plate: nothing to do;
+ * - no plate: unlink the car;
+ * - a plate another stored car already has: link to that car;
+ * - a typo on a car nothing else uses: fix that car's plate in place;
+ * - otherwise: a new car record, leaving the old one (used elsewhere) untouched.
+ */
+export function decideRegChange(input: {
+  current: { id: string; reg: string } | null;
+  newReg: string | null;
+  existingWithNewReg: { id: string } | null;
+  otherUses: number;
+}): RegChangeOutcome {
+  const { current, newReg, existingWithNewReg, otherUses } = input;
+  if (!newReg) return current ? "cleared" : "unchanged";
+  if (current && current.reg === newReg) return "unchanged";
+  if (existingWithNewReg) return "relinked";
+  if (current && otherUses === 0) return "corrected";
+  return "created";
+}
+
+/** Swaps the old plate for the new one at the end of a title ("Keys and immobiliser · AB12 CDE"); other titles stay as typed. */
+export function retitleForReg(title: string, oldReg: string | null, newReg: string | null): string {
+  const fmt = (r: string) => (/^[A-Z]{2}\d{2}[A-Z]{3}$/.test(r) ? `${r.slice(0, 4)} ${r.slice(4)}` : r);
+  if (!oldReg) return title;
+  const suffix = ` · ${fmt(oldReg)}`;
+  if (!title.endsWith(suffix)) return title;
+  const base = title.slice(0, -suffix.length);
+  return newReg ? `${base} · ${fmt(newReg)}` : base;
+}
+
+/**
+ * Applies a registration change for a group of records that share one car (a job and its booking).
+ * Returns the car the group should now point at; the caller updates its own job/booking rows.
+ */
+export async function changeRegistration(
+  env: Env,
+  args: { currentVehicleId: string | null; newReg: string | null; jobIds: string[]; bookingIds: string[]; customerId: string | null },
+  actorId: string | null,
+): Promise<{ outcome: RegChangeOutcome; vehicleId: string | null; oldReg: string | null; newReg: string | null }> {
+  const newReg = args.newReg ? validReg(args.newReg) : null;
+  const current = args.currentVehicleId ? await getVehicle(env, args.currentVehicleId) : null;
+  const existing = newReg ? await first<{ id: string }>(env, "SELECT id FROM vehicles WHERE reg = ?", newReg) : null;
+  let otherUses = 0;
+  if (current) {
+    const notIn = (ids: string[]) => (ids.length ? ` AND id NOT IN (${ids.map(() => "?").join(", ")})` : "");
+    const jobs = await first<{ n: number }>(env, `SELECT COUNT(*) AS n FROM jobs WHERE vehicle_id = ?${notIn(args.jobIds)}`, current.id, ...args.jobIds);
+    const bookings = await first<{ n: number }>(env, `SELECT COUNT(*) AS n FROM bookings WHERE vehicle_id = ?${notIn(args.bookingIds)}`, current.id, ...args.bookingIds);
+    otherUses = (jobs?.n ?? 0) + (bookings?.n ?? 0);
+  }
+  const outcome = decideRegChange({ current: current && { id: current.id, reg: current.reg }, newReg, existingWithNewReg: existing && existing.id !== current?.id ? existing : null, otherUses });
+  const oldReg = current?.reg ?? null;
+  let vehicleId: string | null = current?.id ?? null;
+
+  if (outcome === "cleared") vehicleId = null;
+  else if (outcome === "relinked") vehicleId = existing!.id;
+  else if (outcome === "corrected") {
+    // Same car, wrong plate: keep VIN, mileage and owner, drop what was looked up for the wrong plate.
+    await run(env,
+      `UPDATE vehicles SET reg = ?, make = NULL, model = NULL, colour = NULL, fuel_type = NULL, year = NULL, engine_cc = NULL,
+         mot_status = NULL, mot_expiry = NULL, tax_status = NULL, tax_due = NULL, dvla_json = NULL, dvsa_json = NULL,
+         looked_up_at = NULL, updated_at = ? WHERE id = ?`,
+      newReg, now(), current!.id);
+    const full = await safeLookup(env, newReg!);
+    if (full) {
+      try { await applyLookup(env, current!.id, full); }
+      catch (err) { console.warn("saving vehicle lookup failed", newReg, err); }
+    }
+  } else if (outcome === "created") {
+    vehicleId = (await ensureVehicle(env, newReg!, args.customerId, actorId)).id;
+  }
+  if (outcome !== "unchanged") {
+    await audit(env, actorId, "vehicle.reg_change", "vehicle", current?.id ?? vehicleId ?? undefined, {
+      outcome, from: oldReg, to: newReg, vehicle_id: vehicleId, jobs: args.jobIds, bookings: args.bookingIds,
+    });
+  }
+  return { outcome, vehicleId, oldReg, newReg };
+}

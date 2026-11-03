@@ -7,10 +7,10 @@ import type { JobRow, JobStatus } from "../../lib/types";
 import { JOB_STATUSES } from "../../lib/types";
 import { audit } from "../../lib/audit";
 import { all, first, newId, nextRef, now, run, updateSet } from "../../lib/db";
-import { HttpError, badRequest, json, notFound } from "../../lib/http";
+import { HttpError, badRequest, forbidden, json, notFound } from "../../lib/http";
 import { int, nullable, oneOf, optional, parse, reg, str, vin } from "../../lib/validate";
 import { setBookingStatus } from "../bookings/service";
-import { ensureVehicle, updateVehicle } from "../vehicles/service";
+import { changeRegistration, ensureVehicle, retitleForReg, updateVehicle } from "../vehicles/service";
 import { latestSuggestion } from "../ai/service";
 import { notify } from "../notifications";
 import { formatReg, getJob, openJobForBooking, readVehicle, soft } from "./service";
@@ -67,7 +67,7 @@ async function jobDetail(ctx: Ctx) {
     job.customer_id ? first(env, "SELECT id, name, phone, email FROM customers WHERE id = ?", job.customer_id) : null,
     readVehicle(env, job.vehicle_id),
     job.booking_id ? first(env, "SELECT id, ref, service, status, description, preferred_date, scheduled_start, scheduled_end, location FROM bookings WHERE id = ?", job.booking_id) : null,
-    all(env, "SELECT n.id, n.body, n.created_at, n.user_id, u.name AS author_name FROM job_notes n LEFT JOIN users u ON u.id = n.user_id WHERE n.job_id = ? ORDER BY n.created_at, n.id", job.id),
+    all(env, "SELECT n.id, n.body, n.created_at, n.edited_at, n.user_id, u.name AS author_name FROM job_notes n LEFT JOIN users u ON u.id = n.user_id WHERE n.job_id = ? ORDER BY n.created_at, n.id", job.id),
     all<{ id: string }>(env, "SELECT id, content_type, size, caption, uploaded_by, created_at FROM job_files WHERE job_id = ? ORDER BY created_at, id", job.id),
     latestSuggestion(env, job.id),
     job.assigned_to ? first<{ name: string }>(env, "SELECT name FROM users WHERE id = ?", job.assigned_to) : null,
@@ -79,7 +79,8 @@ async function jobDetail(ctx: Ctx) {
   };
   return json({
     job: { ...job, assignee_name: assignee?.name ?? null },
-    customer, vehicle: v, booking, notes,
+    customer, vehicle: v, booking,
+    notes: (notes as { user_id: string | null }[]).map(n => ({ ...n, mine: n.user_id === userOf(ctx).id })),
     files: files.map(f => ({ ...f, url: `/api/jobs/${job.id}/files/${f.id}` })),
     suggestion,
   });
@@ -141,8 +142,36 @@ async function updateJob(ctx: Ctx) {
     status: optional(oneOf(JOB_STATUSES)),
     assigned_to: nullable(str({ max: 64 })),
     mileage: nullable(int({ min: 0, max: 999999 })),
+    reg: nullable(reg()),
+    customer_id: nullable(id("cus")),
   });
   const patch: Record<string, unknown> = { title: input.title, description: input.description, mileage: input.mileage };
+  const extraAudit: Record<string, unknown> = {};
+
+  // Customer: relink the job (and its booking) to another existing customer.
+  if (input.customer_id !== undefined && input.customer_id !== job.customer_id) {
+    if (input.customer_id !== null && !(await first(env, "SELECT 1 AS ok FROM customers WHERE id = ?", input.customer_id))) {
+      throw badRequest("Some fields need fixing.", { customer_id: "That customer wasn't found." });
+    }
+    patch.customer_id = input.customer_id;
+    extraAudit.customer = { from: job.customer_id, to: input.customer_id };
+  }
+
+  // Registration: fix a typo, move to a car already in the Hub, or add a new car (see changeRegistration).
+  let bookingVehicle: string | null | undefined;
+  if (input.reg !== undefined) {
+    const res = await changeRegistration(env, {
+      currentVehicleId: job.vehicle_id, newReg: input.reg,
+      jobIds: [job.id], bookingIds: job.booking_id ? [job.booking_id] : [],
+      customerId: (patch.customer_id as string | null | undefined) ?? job.customer_id,
+    }, user.id);
+    if (res.outcome !== "unchanged") {
+      if (res.vehicleId !== job.vehicle_id) patch.vehicle_id = res.vehicleId;
+      patch.title = retitleForReg((input.title ?? job.title), res.oldReg, res.newReg);
+      bookingVehicle = res.vehicleId;
+      extraAudit.reg = { from: res.oldReg, to: res.newReg, outcome: res.outcome };
+    }
+  }
   if (input.assigned_to !== undefined) {
     if (input.assigned_to !== null && !(await first(env, "SELECT 1 AS ok FROM users WHERE id = ?", input.assigned_to))) {
       throw badRequest("Some fields need fixing.", { assigned_to: "Pick someone from the list." });
@@ -158,12 +187,17 @@ async function updateJob(ctx: Ctx) {
     patch.status = input.status;
     Object.assign(patch, transitionStamps(job, input.status!, t));
   }
-  const { sql, params } = updateSet(patch, ["title", "description", "mileage", "assigned_to", "status", "started_at", "completed_at"]);
+  const { sql, params } = updateSet(patch, ["title", "description", "mileage", "assigned_to", "status", "started_at", "completed_at", "customer_id", "vehicle_id"]);
   if (!sql) return json({ job });
   await run(env, `UPDATE jobs SET ${sql}, updated_at = ? WHERE id = ?`, ...params, t, job.id);
+  // Keep the booking pointing at the same car and customer as its job.
+  if (job.booking_id) {
+    const bset = updateSet({ vehicle_id: bookingVehicle, customer_id: patch.customer_id ?? undefined }, ["vehicle_id", "customer_id"]);
+    if (bset.sql) await run(env, `UPDATE bookings SET ${bset.sql}, updated_at = ? WHERE id = ?`, ...bset.params, t, job.booking_id);
+  }
 
   const changed = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined));
-  await audit(env, user.id, moving ? "job.status" : "job.update", "job", job.id, { ...changed, ...(moving ? { from: job.status } : {}) });
+  await audit(env, user.id, moving ? "job.status" : "job.update", "job", job.id, { ...changed, ...extraAudit, ...(moving ? { from: job.status } : {}) });
   if (moving && input.status === "completed" && job.booking_id) {
     await soft("bookings.setBookingStatus(completed)", () => setBookingStatus(env, job.booking_id!, "completed", user.id));
   }
@@ -176,7 +210,7 @@ async function updateJob(ctx: Ctx) {
   if (input.assigned_to && input.assigned_to !== job.assigned_to) {
     await notify(env, { kind: "job_assigned", actorId: user.id, onlyUserId: input.assigned_to, link: `#/jobs/${job.id}`, tag: `job-${job.id}-assigned`, params: about }, ctx.exec);
   }
-  return json({ job: updated });
+  return json({ job: updated, reg_change: (extraAudit.reg as { outcome?: string } | undefined)?.outcome ?? null });
 }
 
 async function updateJobVehicle(ctx: Ctx) {
@@ -211,6 +245,35 @@ async function addNote(ctx: Ctx) {
   await audit(env, user.id, "job.note_add", "job", job.id, { note_id: noteId });
   await notify(env, { kind: "job_note", actorId: user.id, link: `#/jobs/${job.id}`, tag: `job-${job.id}-note`, params: { ref: job.ref, note: body, actor: user.name } }, ctx.exec);
   return json({ note: { id: noteId, body, created_at: t, user_id: user.id, author_name: user.name } }, 201);
+}
+
+interface NoteRow { id: string; job_id: string; user_id: string | null; body: string; created_at: string; edited_at: string | null }
+
+/** Only the person who wrote a note can change or remove it. */
+async function mustOwnNote(ctx: Ctx): Promise<NoteRow> {
+  const note = await first<NoteRow>(ctx.env, "SELECT * FROM job_notes WHERE id = ? AND job_id = ?", ctx.params.noteId, ctx.params.id);
+  if (!note) throw notFound("Note");
+  if (note.user_id !== userOf(ctx).id) throw forbidden("You can only change your own notes.");
+  return note;
+}
+
+async function editNote(ctx: Ctx) {
+  const { env } = ctx;
+  const note = await mustOwnNote(ctx);
+  const { body } = parse(await ctx.body(), { body: str({ max: 4000 }) });
+  if (body === note.body) return json({ note });
+  const t = now();
+  await run(env, "UPDATE job_notes SET body = ?, edited_at = ? WHERE id = ?", body, t, note.id);
+  await audit(env, userOf(ctx).id, "job.note_edit", "job", note.job_id, { note_id: note.id, before: note.body, after: body });
+  return json({ note: { ...note, body, edited_at: t } });
+}
+
+async function deleteNote(ctx: Ctx) {
+  const { env } = ctx;
+  const note = await mustOwnNote(ctx);
+  await run(env, "DELETE FROM job_notes WHERE id = ?", note.id);
+  await audit(env, userOf(ctx).id, "job.note_delete", "job", note.job_id, { note_id: note.id, before: note.body });
+  return json({ ok: true });
 }
 
 // ---------- photos ----------
@@ -295,6 +358,8 @@ const jobs: Module = {
     r.patch("/api/jobs/:id", updateJob);
     r.patch("/api/jobs/:id/vehicle", updateJobVehicle);
     r.post("/api/jobs/:id/notes", addNote);
+    r.patch("/api/jobs/:id/notes/:noteId", editNote);
+    r.delete("/api/jobs/:id/notes/:noteId", deleteNote);
     r.post("/api/jobs/:id/files", uploadFile);
     r.get("/api/jobs/:id/files/:fileId", getFile);
     r.delete("/api/jobs/:id/files/:fileId", deleteFile);

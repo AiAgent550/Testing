@@ -9,7 +9,7 @@ import { badRequest, json, notFound } from "../../lib/http";
 import { email, isoDate, isoDateTime, nullable, oneOf, optional, parse, reg, str, ukPhone } from "../../lib/validate";
 import { getSetting } from "../system";
 import { getCustomer } from "../customers/service";
-import { getVehicle, publicVehicle } from "../vehicles/service";
+import { changeRegistration, getVehicle, publicVehicle, retitleForReg } from "../vehicles/service";
 import { likeEscape, phoneSearchDigits } from "../customers/match";
 import { confirmBooking, createBooking, getBooking, setBookingStatus } from "./service";
 import { TRANSITIONS } from "./status";
@@ -104,16 +104,56 @@ async function update(ctx: Ctx) {
     address: nullable(str({ max: 300 })),
     preferred_date: nullable(isoDate()),
     service: optional(oneOf(SERVICES)),
+    reg: nullable(reg()),
+    customer_id: optional(str({ max: 64 })),
   });
+  const { env } = ctx;
+  const actor = userOf(ctx).id;
   const location = patch.location ?? b.location;
   const address = patch.address !== undefined ? patch.address : b.address;
   if (location === "mobile" && !address) throw badRequest("Some fields need fixing.", { address: "Add the address for a mobile visit." });
-  const set = updateSet(patch, ["description", "internal_notes", "location", "address", "preferred_date", "service"]);
-  if (set.sql) {
-    await run(ctx.env, `UPDATE bookings SET ${set.sql}, updated_at = ? WHERE id = ?`, ...set.params, now(), b.id);
-    await audit(ctx.env, userOf(ctx).id, "booking.update", "booking", b.id, { fields: Object.keys(patch).filter(k => (patch as Record<string, unknown>)[k] !== undefined) });
+  const { reg: newReg, customer_id: customerId, ...fields } = patch;
+  const changes: Record<string, unknown> = { ...fields };
+  const audited: Record<string, unknown> = {};
+
+  // Customer: move the booking (and its job) to another existing customer.
+  if (customerId !== undefined && customerId !== b.customer_id) {
+    if (!(await getCustomer(env, customerId))) throw badRequest("Some fields need fixing.", { customer_id: "That customer wasn't found." });
+    changes.customer_id = customerId;
+    audited.customer = { from: b.customer_id, to: customerId };
   }
-  return json({ booking: await getBooking(ctx.env, b.id) });
+
+  // Registration: same rules as on a job card, applied to the booking and every job opened from it.
+  const jobs = await all<{ id: string; title: string }>(env, "SELECT id, title FROM jobs WHERE booking_id = ?", b.id);
+  let regChange: Awaited<ReturnType<typeof changeRegistration>> | null = null;
+  if (newReg !== undefined) {
+    regChange = await changeRegistration(env, {
+      currentVehicleId: b.vehicle_id, newReg, jobIds: jobs.map(j => j.id), bookingIds: [b.id],
+      customerId: (changes.customer_id as string | undefined) ?? b.customer_id,
+    }, actor);
+    if (regChange.outcome === "unchanged") regChange = null;
+    else {
+      if (regChange.vehicleId !== b.vehicle_id) changes.vehicle_id = regChange.vehicleId;
+      audited.reg = { from: regChange.oldReg, to: regChange.newReg, outcome: regChange.outcome };
+    }
+  }
+
+  const t = now();
+  const set = updateSet(changes, ["description", "internal_notes", "location", "address", "preferred_date", "service", "customer_id", "vehicle_id"]);
+  if (set.sql) {
+    await run(env, `UPDATE bookings SET ${set.sql}, updated_at = ? WHERE id = ?`, ...set.params, t, b.id);
+    await audit(env, actor, "booking.update", "booking", b.id, { fields: Object.keys(changes).filter(k => changes[k] !== undefined), ...audited });
+  }
+  // Jobs opened from this booking follow its car and customer.
+  for (const j of jobs) {
+    const jset = updateSet({
+      vehicle_id: regChange ? regChange.vehicleId : undefined,
+      customer_id: changes.customer_id,
+      title: regChange ? retitleForReg(j.title, regChange.oldReg, regChange.newReg) : undefined,
+    }, ["vehicle_id", "customer_id", "title"]);
+    if (jset.sql) await run(env, `UPDATE jobs SET ${jset.sql}, updated_at = ? WHERE id = ?`, ...jset.params, t, j.id);
+  }
+  return json({ booking: await getBooking(env, b.id), reg_change: regChange?.outcome ?? null });
 }
 
 async function confirm(ctx: Ctx) {

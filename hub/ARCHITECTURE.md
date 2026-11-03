@@ -68,6 +68,17 @@ It never throws, so a failed notification can't break the action that caused it.
   (`VAPID_SUBJECT` is a var in wrangler.toml). New keys mean every device has to turn notifications on again.
 - **iPhone:** Web Push only works in the installed app (Add to Home Screen), iOS 16.4 or later.
 
+## Correcting mistakes
+
+Jobs (`PATCH /api/jobs/:id`) and bookings (`PATCH /api/bookings/:id`) accept `reg` and `customer_id` as well as their
+own fields; a job and the booking it came from always move together. A registration change goes through
+`changeRegistration()` in `modules/vehicles/service.ts` (decision logic in `decideRegChange()`, unit-tested):
+same plate does nothing; an empty plate unlinks the car; a plate another stored car has links to that car; a typo on a
+car nothing else uses is fixed in place (looked-up details cleared and fetched again, VIN/mileage/owner kept); otherwise a
+new car is added and the shared one is left alone. Generated titles ("Keys and immobiliser · AB12 CDE") follow the plate.
+Notes can be edited or deleted by their author only (`edited_at`, migration 0008). Edits are audited and send no
+notifications, except reassigning a job, which tells the new assignee.
+
 ## Running locally
 
 ```
