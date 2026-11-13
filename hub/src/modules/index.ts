@@ -10,5 +10,7 @@ import ai from "./ai";
 import leads from "./leads";
 import social from "./social";
 import notifications from "./notifications";
+import invoices from "./invoices";
+import mail from "./mail";
 
-export const modules: Module[] = [auth, system, customers, vehicles, bookings, jobs, ai, leads, social, notifications];
+export const modules: Module[] = [auth, system, customers, vehicles, bookings, jobs, ai, leads, social, notifications, invoices, mail];

@@ -1,5 +1,6 @@
 // Curve Hub entry point. Every request passes through here first:
 //   /api/*            -> module routes (each declares its own access level)
+//   /r/*              -> customers' private photo/video links (public, token in the URL)
 //   /app/*            -> the dashboard, only for fully signed-in users
 //   /login, /assets/* -> public static files
 import type { Env } from "./lib/env";
@@ -17,7 +18,7 @@ async function handle(req: Request, env: Env, exec: ExecutionContext): Promise<R
   const url = new URL(req.url);
   const path = url.pathname;
 
-  if (path.startsWith("/api/")) return router.handle(req, env, exec);
+  if (path.startsWith("/api/") || path.startsWith("/r/")) return router.handle(req, env, exec); // /r/: customer photo links
   if (path === "/") return Response.redirect(new URL("/app/", url).toString(), 302);
 
   if (path === "/app" || path.startsWith("/app/")) {

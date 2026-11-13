@@ -17,6 +17,16 @@ export interface Env {
   VAPID_PRIVATE_KEY?: string;
   VAPID_SUBJECT?: string;
 
+  /** Cloudflare Email Service binding (no destination restriction): customer emails from MAIL_FROM. */
+  EMAIL?: { send(message: OutboundEmail): Promise<{ messageId: string }> };
+  MAIL_FROM?: string;
+  MAIL_BCC?: string;
+
+  /** Printed on invoices; kept as secrets, not in the repository. */
+  BANK_ACCOUNT_NAME?: string;
+  BANK_SORT_CODE?: string;
+  BANK_ACCOUNT_NUMBER?: string;
+
   ENCRYPTION_KEY?: string;
   ANTHROPIC_API_KEY?: string;
   DVLA_API_KEY?: string;
@@ -32,6 +42,17 @@ export interface Env {
   YOUTUBE_API_KEY?: string;
   TIKTOK_CLIENT_KEY?: string;
   TIKTOK_CLIENT_SECRET?: string;
+}
+
+export interface OutboundEmail {
+  from: string | { email: string; name?: string };
+  to: string | string[];
+  bcc?: string | string[];
+  replyTo?: string | { email: string; name?: string };
+  subject: string;
+  text?: string;
+  html?: string;
+  attachments?: { content: string | ArrayBuffer | ArrayBufferView; filename: string; type: string; disposition: "attachment" | "inline" }[];
 }
 
 export type Lang = "en" | "pl";

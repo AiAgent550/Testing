@@ -28,6 +28,11 @@ bucket_name = "curve-hub-files"
 name = "STAFF_MAIL"
 destination_address = "mkautoserviceslimited@gmail.com"
 
+# Customer emails (job reports, invoices, quotes) from info@ through Cloudflare Email Service. No destination
+# restriction: needs the domain onboarded to Email Sending and the Workers Paid plan.
+[[send_email]]
+name = "EMAIL"
+
 [triggers]
 crons = ["*/10 * * * *"]          # comment watcher and outbox sender
 
@@ -38,6 +43,8 @@ APP_ORIGIN = "https://hub.curveperformance.co.uk"
 SITE_ORIGIN = "https://curveperformance.co.uk"
 BUSINESS_NAME = "Curve Performance"
 STAFF_ALERT_TO = "mkautoserviceslimited@gmail.com"
+MAIL_FROM = "info@curveperformance.co.uk"
+MAIL_BCC = "mkautoserviceslimited@gmail.com"          # a copy of every customer email
 VAPID_SUBJECT = "mailto:info@curveperformance.co.uk"   # contact for push services (Web Push)
 
 # Secrets (never in this file). Set with `wrangler secret put NAME`, or .dev.vars locally:

@@ -32,7 +32,9 @@ public/app/js/
 | customers | customers | `findOrCreateCustomer` | customers |
 | vehicles | vehicles | `lookupVehicle`, `ensureVehicle` | (inside customers, bookings, jobs) |
 | bookings | bookings | `createBooking`, `getBooking` | bookings |
-| jobs | jobs, job_notes, job_files | `createJobFromBooking` | jobs |
+| jobs | jobs, job_notes, job_files (photos with a phone-made preview, and videos streamed to R2) | `createJobFromBooking` | jobs |
+| invoices | documents, document_lines (invoices INV-…, quotes QUO-…; PDFs drawn with pdf-lib) | `getDocument`, `documentPdf`, `markSent` | invoices, (inside jobs) |
+| mail | outbound_emails, share_links (customer emails from info@ via Email Service; private 30-day photo/video links at `/r/<token>`) | — | (send sheet in jobs and invoices) |
 | ai | ai_suggestions | `client.ts: structured()` | (inside jobs) |
 | leads, social | social_accounts, social_posts, social_post_targets, comments, leads | `markLeadBooked` | leads, social |
 | notifications | outbox, notifications, push_subscriptions, notification_prefs | `notify`, `queueMessage` | notifications, settings |
@@ -42,7 +44,7 @@ Rules:
 2. Every route declares access: `public` (booking form, health), `pending` (mid sign-in) or `user` (default).
 3. Every request body goes through `parse()` from `lib/validate.ts`. No raw SQL string building with user input; always `?` parameters.
 4. Every create/update/delete calls `audit()`.
-5. Secrets come from `env`, never from code or the database in plain text. Tokens at rest use `encrypt()`.
+5. Secrets come from `env` (including the bank details printed on invoices: BANK_ACCOUNT_NAME, BANK_SORT_CODE, BANK_ACCOUNT_NUMBER), never from code or the database in plain text. Tokens at rest use `encrypt()`.
 6. External services (DVLA, DVSA, Claude, social platforms) are optional: when a key is missing, the feature degrades
    (manual entry, rule-based fallback, mock adapter in development) and the Settings page shows it as not connected.
 7. UI pages import only from `core.js`, never inline `<script>` or `style="..."` attributes (blocked by the CSP);

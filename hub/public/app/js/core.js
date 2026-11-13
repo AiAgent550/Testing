@@ -83,6 +83,11 @@ const ICONS = {
   spark: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/>',
   back: '<path d="M15 5l-7 7 7 7"/>',
   logout: '<path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h11"/>',
+  invoice: '<path d="M6 3h9l4 4v14l-2.5-1.5L14 21l-2-1.5L10 21l-2.5-1.5L5 21V4a1 1 0 0 1 1-1z"/><path d="M15 3v4h4M9 10h6M9 14h6"/>',
+  send: '<path d="M21 3L10 14M21 3l-7 18-4-7-7-4z"/>',
+  video: '<rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/>',
+  image: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>',
+  play: '<path d="M8 5v14l11-7z" fill="currentColor"/>',
   bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
 };
 
@@ -211,10 +216,11 @@ export function sheet(title, content, actions = []) {
     content,
     actions.length ? h("div.sheet-actions", actions) : null,
   );
-  function close() { backdrop.remove(); panel.remove(); document.removeEventListener("keydown", onKey); prev?.focus?.(); }
+  function close() { backdrop.remove(); panel.remove(); document.removeEventListener("keydown", onKey); removeEventListener("hashchange", close); prev?.focus?.(); }
   function onKey(e) { if (e.key === "Escape") close(); }
   backdrop.addEventListener("click", close);
   document.addEventListener("keydown", onKey);
+  addEventListener("hashchange", close); // moving to another page closes it
   document.body.append(backdrop, panel);
   panel.querySelector("input, select, textarea, button:not(.ghost)")?.focus();
   return close;

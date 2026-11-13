@@ -29,3 +29,28 @@ export function sniffImage(bytes: Uint8Array): "image/jpeg" | "image/png" | "ima
   }
   return null;
 }
+
+// ---------- videos ----------
+// Phones record MP4 (Android) or QuickTime MOV (iPhone); WebM and 3GP turn up from some apps. Uploads are streamed
+// straight to storage, so the limit is just under the 100 MB a single request can carry.
+export const MAX_VIDEO_BYTES = 95 * 1024 * 1024;
+export const MAX_PREVIEW_BYTES = 3 * 1024 * 1024;
+export const VIDEO_DECLARED = ["video/mp4", "video/quicktime", "video/webm", "video/3gpp", "video/x-m4v", "application/octet-stream"];
+
+const MP4_BRANDS = /^(isom|iso[2-9]|mp41|mp42|avc1|M4V |M4VP|dash|3gp[4-6]|3g2[abc]|mmp4|MSNV|f4v |XAVC|nvr1)$/;
+
+export function sniffVideo(bytes: Uint8Array): "video/mp4" | "video/quicktime" | "video/webm" | "video/3gpp" | null {
+  if (bytes.length < 12) return null;
+  if (bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3) return "video/webm";
+  const box = ascii(bytes, 4, 8);
+  if (box === "ftyp") {
+    const brand = ascii(bytes, 8, 12);
+    if (brand === "qt  ") return "video/quicktime";
+    if (/^3g/.test(brand)) return "video/3gpp";
+    if (MP4_BRANDS.test(brand)) return "video/mp4";
+    return null;
+  }
+  // Older QuickTime files can start with other atoms before (or without) ftyp.
+  if (["moov", "mdat", "wide", "free", "skip"].includes(box)) return "video/quicktime";
+  return null;
+}

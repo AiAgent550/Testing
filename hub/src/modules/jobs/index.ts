@@ -15,7 +15,8 @@ import { latestSuggestion } from "../ai/service";
 import { notify } from "../notifications";
 import { formatReg, getJob, openJobForBooking, readVehicle, soft } from "./service";
 import { ACTIVE_STATUSES, canTransition, transitionStamps } from "./status";
-import { ALLOWED_DECLARED, MAX_PHOTO_BYTES, sniffImage } from "./files";
+import { serveStored } from "../../lib/storage";
+import { ALLOWED_DECLARED, MAX_PHOTO_BYTES, MAX_PREVIEW_BYTES, MAX_VIDEO_BYTES, VIDEO_DECLARED, sniffImage, sniffVideo } from "./files";
 
 const id = (prefix: string) => (v: unknown, f: string) => {
   const s = str({ max: 64 })(v, f);
@@ -68,7 +69,7 @@ async function jobDetail(ctx: Ctx) {
     readVehicle(env, job.vehicle_id),
     job.booking_id ? first(env, "SELECT id, ref, service, status, description, preferred_date, scheduled_start, scheduled_end, location FROM bookings WHERE id = ?", job.booking_id) : null,
     all(env, "SELECT n.id, n.body, n.created_at, n.edited_at, n.user_id, u.name AS author_name FROM job_notes n LEFT JOIN users u ON u.id = n.user_id WHERE n.job_id = ? ORDER BY n.created_at, n.id", job.id),
-    all<{ id: string }>(env, "SELECT id, content_type, size, caption, uploaded_by, created_at FROM job_files WHERE job_id = ? ORDER BY created_at, id", job.id),
+    all<{ id: string; preview_key: string | null }>(env, "SELECT id, kind, content_type, size, preview_key, preview_size, filename, caption, uploaded_by, created_at FROM job_files WHERE job_id = ? ORDER BY created_at, id", job.id),
     latestSuggestion(env, job.id),
     job.assigned_to ? first<{ name: string }>(env, "SELECT name FROM users WHERE id = ?", job.assigned_to) : null,
   ]);
@@ -81,7 +82,7 @@ async function jobDetail(ctx: Ctx) {
     job: { ...job, assignee_name: assignee?.name ?? null },
     customer, vehicle: v, booking,
     notes: (notes as { user_id: string | null }[]).map(n => ({ ...n, mine: n.user_id === userOf(ctx).id })),
-    files: files.map(f => ({ ...f, url: `/api/jobs/${job.id}/files/${f.id}` })),
+    files: files.map(({ preview_key, ...f }) => fileView(job.id, { ...f, preview_key })),
     suggestion,
   });
 }
@@ -298,45 +299,86 @@ async function uploadFile(ctx: Ctx) {
   if (!type || !ALLOWED_DECLARED.includes(declared)) {
     throw new HttpError(415, "unsupported_type", "Only photos can be uploaded (JPEG, PNG, WebP or HEIC).", { file: "Not a supported image." });
   }
+  // A smaller JPEG made on the phone, used for thumbnails and email attachments.
+  const previewPart = form.get("preview");
+  let preview: Uint8Array | null = null;
+  if (previewPart && typeof previewPart !== "string" && previewPart.size > 0 && previewPart.size <= MAX_PREVIEW_BYTES) {
+    const pb = new Uint8Array(await previewPart.arrayBuffer());
+    if (sniffImage(pb) === "image/jpeg") preview = pb;
+  }
+  const nameRaw = form.get("filename") ?? file.name;
+  const filename = typeof nameRaw === "string" && nameRaw.trim() ? nameRaw.trim().slice(0, 120) : null;
   const captionRaw = form.get("caption");
   const caption = typeof captionRaw === "string" && captionRaw.trim() ? captionRaw.trim().slice(0, 200) : null;
 
   const fileId = newId("jfl");
   const key = `jobs/${job.id}/${fileId}`;
   await env.FILES.put(key, bytes, { httpMetadata: { contentType: type }, customMetadata: { job_id: job.id, uploaded_by: user.id } });
+  const previewKey = preview ? `${key}.preview.jpg` : null;
+  if (preview) await env.FILES.put(previewKey!, preview, { httpMetadata: { contentType: "image/jpeg" }, customMetadata: { job_id: job.id } });
   const t = now();
-  await run(env, "INSERT INTO job_files (id, job_id, r2_key, content_type, size, caption, uploaded_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-    fileId, job.id, key, type, bytes.length, caption, user.id, t);
+  await run(env, "INSERT INTO job_files (id, job_id, r2_key, kind, content_type, size, preview_key, preview_size, filename, caption, uploaded_by, created_at) VALUES (?, ?, ?, 'photo', ?, ?, ?, ?, ?, ?, ?, ?)",
+    fileId, job.id, key, type, bytes.length, previewKey, preview?.length ?? null, filename, caption, user.id, t);
   await run(env, "UPDATE jobs SET updated_at = ? WHERE id = ?", t, job.id);
   await audit(env, user.id, "job.file_add", "job", job.id, { file_id: fileId, content_type: type, size: bytes.length });
-  return json({ file: { id: fileId, content_type: type, size: bytes.length, caption, uploaded_by: user.id, created_at: t, url: `/api/jobs/${job.id}/files/${fileId}` } }, 201);
+  return json({ file: fileView(job.id, { id: fileId, kind: "photo", content_type: type, size: bytes.length, preview_key: previewKey, preview_size: preview?.length ?? null, filename, caption, uploaded_by: user.id, created_at: t }) }, 201);
 }
 
-interface FileRow { id: string; job_id: string; r2_key: string; content_type: string; size: number }
+/** What the dashboard gets for a photo or video: never the storage key, just the URLs. */
+function fileView(jobId: string, f: { id: string; preview_key: string | null } & Record<string, unknown>) {
+  const { preview_key, ...rest } = f;
+  const url = `/api/jobs/${jobId}/files/${f.id}`;
+  return { ...rest, url, thumb_url: preview_key ? `${url}?v=preview` : f.kind === "video" ? null : url };
+}
+
+/** Videos are streamed straight into storage (they're too big to hold in memory), then checked by their first bytes. */
+async function uploadVideo(ctx: Ctx) {
+  const { env, req } = ctx;
+  const user = userOf(ctx);
+  const job = await mustGetJob(ctx);
+  const len = Number(req.headers.get("content-length") || 0);
+  if (!len || !req.body) throw new HttpError(411, "length_required", "The video couldn't be read. Try again.");
+  if (len > MAX_VIDEO_BYTES) throw new HttpError(413, "too_large", "Videos can be up to 95 MB. Trim it or record a shorter clip.");
+  const declared = (req.headers.get("content-type") || "").toLowerCase().split(";")[0].trim();
+  if (declared && !VIDEO_DECLARED.includes(declared)) throw new HttpError(415, "unsupported_type", "Only videos can be uploaded here (MP4, MOV or WebM).", { file: "Not a supported video." });
+  let filename: string | null = null;
+  try { filename = decodeURIComponent(req.headers.get("x-file-name") || "").trim().slice(0, 120) || null; } catch { filename = null; }
+
+  const fileId = newId("jfl");
+  const key = `jobs/${job.id}/${fileId}`;
+  await env.FILES.put(key, req.body, { httpMetadata: { contentType: declared || "video/mp4" }, customMetadata: { job_id: job.id, uploaded_by: user.id } });
+  const head = await env.FILES.get(key, { range: { offset: 0, length: 64 } });
+  const type = head ? sniffVideo(new Uint8Array(await head.arrayBuffer())) : null;
+  const stored = await env.FILES.head(key);
+  if (!type || !stored) {
+    await env.FILES.delete(key);
+    throw new HttpError(415, "unsupported_type", "Only videos can be uploaded here (MP4, MOV or WebM).", { file: "Not a supported video." });
+  }
+  const t = now();
+  await run(env, "INSERT INTO job_files (id, job_id, r2_key, kind, content_type, size, filename, uploaded_by, created_at) VALUES (?, ?, ?, 'video', ?, ?, ?, ?, ?)",
+    fileId, job.id, key, type, stored.size, filename, user.id, t);
+  await run(env, "UPDATE jobs SET updated_at = ? WHERE id = ?", t, job.id);
+  await audit(env, user.id, "job.file_add", "job", job.id, { file_id: fileId, content_type: type, size: stored.size, kind: "video" });
+  return json({ file: fileView(job.id, { id: fileId, kind: "video", content_type: type, size: stored.size, preview_key: null, preview_size: null, filename, caption: null, uploaded_by: user.id, created_at: t }) }, 201);
+}
+
+interface FileRow { id: string; job_id: string; r2_key: string; content_type: string; size: number; preview_key: string | null; kind: string }
 
 async function mustGetFile(ctx: Ctx): Promise<FileRow> {
-  const f = await first<FileRow>(ctx.env, "SELECT id, job_id, r2_key, content_type, size FROM job_files WHERE id = ? AND job_id = ?", ctx.params.fileId, ctx.params.id);
+  const f = await first<FileRow>(ctx.env, "SELECT id, job_id, r2_key, kind, content_type, size, preview_key FROM job_files WHERE id = ? AND job_id = ?", ctx.params.fileId, ctx.params.id);
   if (!f) throw notFound("Photo");
   return f;
 }
 
 async function getFile(ctx: Ctx) {
   const f = await mustGetFile(ctx);
-  const obj = await ctx.env.FILES.get(f.r2_key);
-  if (!obj) throw notFound("Photo");
-  return new Response(obj.body, {
-    headers: {
-      "content-type": f.content_type,
-      "content-length": String(obj.size),
-      "cache-control": "private, max-age=3600",
-      "content-disposition": "inline",
-    },
-  });
+  if (ctx.url.searchParams.get("v") === "preview" && f.preview_key) return serveStored(ctx.env, ctx.req, f.preview_key, "image/jpeg");
+  return serveStored(ctx.env, ctx.req, f.r2_key, f.content_type);
 }
 
 async function deleteFile(ctx: Ctx) {
   const f = await mustGetFile(ctx);
-  await ctx.env.FILES.delete(f.r2_key);
+  await ctx.env.FILES.delete(f.preview_key ? [f.r2_key, f.preview_key] : f.r2_key);
   await run(ctx.env, "DELETE FROM job_files WHERE id = ?", f.id);
   await audit(ctx.env, userOf(ctx).id, "job.file_delete", "job", f.job_id, { file_id: f.id });
   return json({ ok: true });
@@ -361,6 +403,7 @@ const jobs: Module = {
     r.patch("/api/jobs/:id/notes/:noteId", editNote);
     r.delete("/api/jobs/:id/notes/:noteId", deleteNote);
     r.post("/api/jobs/:id/files", uploadFile);
+    r.post("/api/jobs/:id/videos", uploadVideo);
     r.get("/api/jobs/:id/files/:fileId", getFile);
     r.delete("/api/jobs/:id/files/:fileId", deleteFile);
   },

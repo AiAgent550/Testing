@@ -7,6 +7,7 @@ export const PAGES = [
   { id: "bookings",  label: N_("Bookings"),  icon: "bookings",  tab: true,  load: () => import("./bookings.js") },
   { id: "jobs",      label: N_("Jobs"),      icon: "jobs",      tab: true,  load: () => import("./jobs.js") },
   { id: "leads",     label: N_("Leads"),     icon: "leads",     tab: true,  load: () => import("./leads.js"), badge: "newLeads" },
+  { id: "invoices",  label: N_("Invoices"),  icon: "invoice",   tab: false, load: () => import("./invoices.js") },
   { id: "customers", label: N_("Customers"), icon: "customers", tab: false, load: () => import("./customers.js") },
   { id: "social",    label: N_("Social"),    icon: "social",    tab: false, load: () => import("./social.js") },
   { id: "notifications", label: N_("Notifications"), icon: "bell", tab: false, load: () => import("./notifications.js") },

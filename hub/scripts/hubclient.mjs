@@ -32,8 +32,10 @@ export async function signIn(email = process.env.SMOKE_EMAIL, password = process
   const call = async (path, { method = "GET", body, headers = {} } = {}) => {
     const h = { origin: BASE, ...headers };
     if (cookie) h.cookie = cookie;
-    if (body !== undefined && !(body instanceof FormData)) h["content-type"] = "application/json";
-    const res = await fetch(BASE + path, { method, headers: h, body: body === undefined ? undefined : body instanceof FormData ? body : JSON.stringify(body), redirect: "manual" });
+    // FormData and raw bytes (Blob, typed arrays) go as they are; anything else is JSON.
+    const raw = body instanceof FormData || body instanceof Blob || ArrayBuffer.isView(body);
+    if (body !== undefined && !raw && !h["content-type"]) h["content-type"] = "application/json";
+    const res = await fetch(BASE + path, { method, headers: h, body: body === undefined ? undefined : raw ? body : JSON.stringify(body), redirect: "manual" });
     const sc = res.headers.get("set-cookie");
     if (sc) cookie = sc.split(";")[0];
     const data = (res.headers.get("content-type") || "").includes("json") ? await res.json() : null;

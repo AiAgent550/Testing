@@ -1,0 +1,20 @@
+/* Customer photo/video link page (/r/...). Same night palette as the website and the Hub. */
+@font-face { font-family: "Unbounded"; src: url("/assets/fonts/unbounded.woff2") format("woff2"); font-weight: 200 700; font-display: swap; }
+@font-face { font-family: "Manrope"; src: url("/assets/fonts/manrope.woff2") format("woff2"); font-weight: 400 700; font-display: swap; }
+:root { color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100dvh; background: radial-gradient(120% 70% at 50% 0%, #141a21, #050608 60%); color: #e9eef4;
+  font: 400 16px/1.55 Manrope, system-ui, sans-serif; display: flex; flex-direction: column; }
+header { padding: 22px 20px; font: 300 15px Unbounded, sans-serif; letter-spacing: .28em; color: #c3ccd5; text-align: center; border-bottom: 1px solid #1a1f27; }
+header b { font-weight: 700; color: #ffffff; }
+main { width: 100%; max-width: 1100px; margin: 0 auto; padding: 28px 16px 40px; flex: 1; }
+h1 { margin: 0 0 6px; font: 500 clamp(20px, 4vw, 28px)/1.25 Unbounded, sans-serif; letter-spacing: .02em; }
+.muted, p { color: #a9b3bf; margin: 0 0 22px; }
+.grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+figure { margin: 0; border: 1px solid #1a1f27; border-radius: 14px; overflow: hidden; background: #0b0d10; }
+figure img, figure video { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: #000; }
+figure video { object-fit: contain; }
+figcaption { padding: 10px 14px; font-size: 14px; color: #8d98a4; }
+a { color: #c3ccd5; }
+a:hover { color: #ffffff; }
+footer { padding: 20px; text-align: center; font-size: 13px; color: #8d98a4; border-top: 1px solid #1a1f27; }

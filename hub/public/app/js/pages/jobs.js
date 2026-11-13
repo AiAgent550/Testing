@@ -1,8 +1,10 @@
 // Jobs: the workshop's job cards. Built for a phone in the workshop first:
-// big targets, the plate up top, status as large buttons, camera upload and "Ask AI".
+// big targets, the plate up top, status as large buttons, camera/gallery/video upload, invoices, emails to the customer and "Ask AI".
 import {
-  api, chip, empty, field, fmtAgo, fmtPhone, formatReg, h, icon, loading, pageHead, plate, segmented, sheet, showFieldErrors, t, toast, translatable, N_, jobTitle,
+  api, chip, empty, field, fmtAgo, fmtPhone, formatReg, h, icon, loading, pageHead, plate, segmented, sheet, showFieldErrors, t, tn, toast, translatable, N_, jobTitle,
 } from "../core.js";
+import { fmtSize, isVideo, uploadPhoto, uploadVideo } from "../media.js";
+import { docChip, fmtDay, fmtMoney, sendSheet } from "../send.js";
 import { REG_OUTCOME, customerBlock, regField } from "../edit.js";
 
 const STATUS_LABELS = { open: t("Open"), in_progress: t("In progress"), waiting_parts: t("Waiting for parts"), completed: t("Completed"), cancelled: t("Cancelled") };
@@ -130,6 +132,7 @@ async function renderDetail(view, id, { navigate, refreshCounts }) {
   const notesBox = h("div.stack");
   const photosBox = h("div.stack");
   const aiBox = h("div.stack");
+  const moneyBox = h("div.stack");
 
   async function patch(body, okText) {
     const { job } = await api(base, { method: "PATCH", body });
@@ -286,53 +289,115 @@ async function renderDetail(view, id, { navigate, refreshCounts }) {
     });
   }
 
-  // ---- photos ----
+  // ---- photos and videos ----
+  let uploading = null; // { done, total, progress } while files go up
+  async function addFiles(files) {
+    if (!files.length) return;
+    uploading = { done: 0, total: files.length, progress: 0 };
+    drawPhotos();
+    let added = 0;
+    for (const f of files) {
+      try {
+        const file = isVideo(f)
+          ? await uploadVideo(base, f, p => { uploading.progress = p; drawProgress(); })
+          : await uploadPhoto(api, base, f);
+        d.files = [...d.files, file];
+        added++;
+      } catch (err) { toast(err.message, "bad"); }
+      uploading.done++; uploading.progress = 0;
+      drawPhotos();
+    }
+    uploading = null;
+    drawPhotos();
+    if (added) toast(tn(added, "{n} file added.|{n} files added."));
+  }
+  const progressBar = h("div", { style: "height:6px;border-radius:99px;background:var(--line);overflow:hidden" }, h("div", { style: "height:100%;width:0;background:var(--led);transition:width .2s" }));
+  function drawProgress() {
+    if (!uploading) return;
+    const share = (uploading.done + uploading.progress) / uploading.total;
+    progressBar.firstChild.style.width = `${Math.round(share * 100)}%`;
+  }
+  function picker(attrs, label, iconName, primary) {
+    const input = h("input.sr", { type: "file", ...attrs });
+    input.addEventListener("change", () => { const files = [...input.files]; input.value = ""; addFiles(files); });
+    return h(`label.btn${primary ? ".primary" : ""}`, { style: "cursor:pointer;flex:1 1 120px" }, icon(iconName), label, input);
+  }
   function drawPhotos() {
-    const picker = h("input.sr", { type: "file", accept: "image/*", capture: "environment", multiple: true });
-    const label = h("label.btn.primary", { style: "cursor:pointer" }, icon("camera"), t("Add photo"), picker);
-    picker.addEventListener("change", async () => {
-      const files = [...picker.files];
-      picker.value = "";
-      for (const f of files) {
-        if (f.size > 10 * 1024 * 1024) { toast(t("{name} is over 10 MB.", { name: f.name }), "bad"); continue; }
-        const fd = new FormData();
-        fd.append("file", f, f.name);
-        label.setAttribute("aria-busy", "true");
-        try {
-          const { file } = await api(`${base}/files`, { method: "POST", body: fd });
-          d.files = [...d.files, file];
-          drawPhotos();
-          toast(t("Photo added."));
-        } catch (err) { toast(err.message, "bad"); }
-        finally { label.removeAttribute("aria-busy"); }
-      }
-    });
+    const buttons = h("div", { style: "display:flex;flex-wrap:wrap;gap:8px" },
+      picker({ accept: "image/*", capture: "environment", multiple: true }, t("Take photo"), "camera", true),
+      picker({ accept: "video/*", capture: "environment" }, t("Record video"), "video"),
+      picker({ accept: "image/*,video/*", multiple: true }, t("From gallery"), "image"));
+    const tile = f => h("button", { type: "button", "aria-label": f.kind === "video" ? t("Play video") : t("Open photo"), style: "position:relative;padding:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--raise);cursor:pointer;aspect-ratio:1", onclick: () => viewPhoto(f) },
+      f.kind === "video"
+        ? [h("video", { src: `${f.url}#t=0.5`, muted: true, playsInline: true, preload: "metadata", style: "display:block;width:100%;height:100%;object-fit:cover;pointer-events:none" }),
+           h("span", { style: "position:absolute;inset:auto 6px 6px auto;display:grid;place-items:center;width:28px;height:28px;border-radius:99px;background:rgba(0,0,0,.65)" }, icon("play"))]
+        : h("img", { src: f.thumb_url || f.url, alt: f.caption || t("Job photo"), loading: "lazy", style: "display:block;width:100%;height:100%;object-fit:cover" }));
     const grid = d.files.length
-      ? h("div", { style: "display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px" },
-        d.files.map(f => h("button", { type: "button", "aria-label": f.caption || t("Open photo"), style: "padding:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--raise);cursor:pointer;aspect-ratio:1", onclick: () => viewPhoto(f) },
-          h("img", { src: f.url, alt: f.caption || t("Job photo"), loading: "lazy", style: "display:block;width:100%;height:100%;object-fit:cover" }))))
+      ? h("div", { style: "display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px" }, d.files.map(tile))
       : h("p.muted.small", { style: "margin:0" }, t("No photos yet. Snap the dash, the codes, the part numbers."));
     photosBox.replaceChildren(
-      h("div", { style: "display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap" }, sectionTitle(t("Photos")), label),
+      h("div", { style: "display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap" }, sectionTitle(t("Photos and videos"), "camera"),
+        d.files.length ? h("button.btn.small", { type: "button", onclick: () => openSend("report") }, icon("send"), t("Send to customer")) : null),
+      uploading ? h("div.stack", { style: "gap:6px" }, h("span.muted.small", t("Uploading {done} of {total}…", { done: Math.min(uploading.done + 1, uploading.total), total: uploading.total })), progressBar) : buttons,
       grid,
     );
+    drawProgress();
   }
 
   function viewPhoto(f) {
     const del = h("button.btn.danger", { type: "button", onclick: async () => {
-      if (!confirm(t("Delete this photo?"))) return;
+      if (!confirm(f.kind === "video" ? t("Delete this video?") : t("Delete this photo?"))) return;
       try {
         await api(`${base}/files/${encodeURIComponent(f.id)}`, { method: "DELETE" });
         d.files = d.files.filter(x => x.id !== f.id);
-        close(); drawPhotos(); toast(t("Photo deleted."));
+        close(); drawPhotos(); toast(f.kind === "video" ? t("Video deleted.") : t("Photo deleted."));
       } catch (err) { toast(err.message, "bad"); }
     } }, t("Delete"));
-    const open = h("a.btn", { href: f.url, target: "_blank", rel: "noopener" }, t("Open full size"));
-    const close = sheet(f.caption || t("Photo"),
-      h("div.stack",
-        h("img", { src: f.url, alt: f.caption || t("Job photo"), style: "display:block;width:100%;max-height:70dvh;object-fit:contain;border-radius:10px;background:#000" }),
-        h("p.muted.small", { style: "margin:0" }, t("Added {when}", { when: fmtAgo(f.created_at) }))),
+    const open = h("a.btn", { href: f.url, target: "_blank", rel: "noopener" }, f.kind === "video" ? t("Open video") : t("Open full size"));
+    const media = f.kind === "video"
+      ? h("video", { src: f.url, controls: true, playsInline: true, preload: "metadata", style: "display:block;width:100%;max-height:70dvh;border-radius:10px;background:#000" })
+      : h("img", { src: f.url, alt: f.caption || t("Job photo"), style: "display:block;width:100%;max-height:70dvh;object-fit:contain;border-radius:10px;background:#000" });
+    const close = sheet(f.caption || (f.kind === "video" ? t("Video") : t("Photo")),
+      h("div.stack", media,
+        h("p.muted.small", { style: "margin:0" }, [t("Added {when}", { when: fmtAgo(f.created_at) }), fmtSize(f.size)].join(" · "))),
       [del, open]);
+  }
+
+  // ---- invoices, quotes and emails to the customer ----
+  let docs = [], emails = [];
+  async function loadMoney() {
+    try {
+      const [inv, quo, mail] = await Promise.all([
+        api(`/api/documents?kind=invoice&job_id=${encodeURIComponent(id)}`),
+        api(`/api/documents?kind=quote&job_id=${encodeURIComponent(id)}`),
+        api(`/api/mail?job_id=${encodeURIComponent(id)}`),
+      ]);
+      docs = [...quo.documents, ...inv.documents];
+      emails = mail.emails;
+    } catch (err) { toast(err.message, "bad"); }
+    drawMoney();
+  }
+  function drawMoney() {
+    const rows = docs.map(doc => h("a.row", { href: `#/invoices/${encodeURIComponent(doc.id)}` },
+      h("span.title", `${doc.number} · ${fmtMoney(doc.total_pence)}`),
+      docChip(doc),
+      h("span.sub", [doc.kind === "invoice" ? t("Invoice") : t("Quote"), fmtDay(doc.issue_date), doc.kind === "invoice" && doc.balance_pence > 0 && doc.status !== "draft" ? t("{amount} to pay", { amount: fmtMoney(doc.balance_pence) }) : null].filter(Boolean).join(" · "))));
+    const sent = emails.slice(0, 5).map(e => h("div.row",
+      h("span.title", e.subject),
+      chip(e.status === "sent" ? "sent" : "failed"),
+      h("span.sub", [e.to_email, fmtAgo(e.created_at), e.sent_by_name, e.attachments.length ? tn(e.attachments.length, "{n} attachment|{n} attachments") : null].filter(Boolean).join(" · "))));
+    moneyBox.replaceChildren(
+      h("div", { style: "display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap" }, sectionTitle(t("Invoices and quotes"), "invoice"),
+        h("button.btn.small", { type: "button", onclick: () => openSend(docs.some(x => x.kind === "invoice" && x.status !== "void") ? "invoice" : "report") }, icon("send"), t("Email customer"))),
+      rows.length ? h("div.list", rows) : h("p.muted.small", { style: "margin:0" }, t("No invoice or quote for this job yet.")),
+      h("div", { style: "display:flex;flex-wrap:wrap;gap:8px" },
+        h("a.btn.primary", { href: `#/invoices/new/invoice/${encodeURIComponent(id)}`, style: "flex:1 1 140px" }, icon("plus"), t("New invoice")),
+        h("a.btn", { href: `#/invoices/new/quote/${encodeURIComponent(id)}`, style: "flex:1 1 140px" }, icon("plus"), t("New quote"))),
+      sent.length ? [h("h3", { style: "margin:6px 0 0;font:600 13px/1.3 var(--body);color:var(--mist)" }, t("Emails sent")), h("div.list", sent)] : null,
+    );
+  }
+  function openSend(purpose) {
+    sendSheet({ purpose, job: d, docs, onSent: loadMoney });
   }
 
   // ---- Ask AI ----
@@ -386,7 +451,7 @@ async function renderDetail(view, id, { navigate, refreshCounts }) {
     );
   }
 
-  drawStatus(); drawNotes(); drawPhotos(); drawAi();
+  drawStatus(); drawNotes(); drawPhotos(); drawAi(); drawMoney(); loadMoney();
   view.replaceChildren(
     head,
     h("div.grid-2", { style: "align-items:start" },
@@ -395,6 +460,7 @@ async function renderDetail(view, id, { navigate, refreshCounts }) {
         issueCard,
         h("section.card.stack", statusBox),
         h("section.card.stack", h("h2.h2", t("Job details")), field(t("Assigned to"), assignee), carForm),
+        h("section.card.stack", moneyBox),
       ),
       h("div.stack",
         h("section.card.stack", aiBox),
