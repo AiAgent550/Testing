@@ -5,7 +5,7 @@ import { audit } from "../../lib/audit";
 import { all, first, newId, nextRef, now, run } from "../../lib/db";
 import { conflict, notFound } from "../../lib/http";
 import { getBooking, setBookingStatus } from "../bookings/service";
-import { getVehicle } from "../vehicles/service";
+import { freshVehicle } from "../vehicles/service";
 
 export const SERVICE_LABELS: Record<Service, string> = {
   remap: "ECU remap", keys: "Keys and immobiliser", coding: "Coding", modules: "Module work",
@@ -38,7 +38,7 @@ async function readBooking(env: Env, id: string): Promise<BookingRow | null> {
 
 export async function readVehicle(env: Env, id: string | null): Promise<VehicleRow | null> {
   if (!id) return null;
-  const viaService = await soft("vehicles.getVehicle", () => getVehicle(env, id));
+  const viaService = await soft("vehicles.freshVehicle", () => freshVehicle(env, id));
   return viaService ?? first<VehicleRow>(env, "SELECT * FROM vehicles WHERE id = ?", id);
 }
 

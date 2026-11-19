@@ -4,6 +4,7 @@ import {
   api, chip, empty, field, fmtAgo, fmtPhone, formatReg, h, icon, loading, pageHead, plate, segmented, sheet, showFieldErrors, t, tn, toast, translatable, N_, jobTitle,
 } from "../core.js";
 import { fmtSize, isVideo, uploadPhoto, uploadVideo } from "../media.js";
+import { vehiclePanel, vehicleChips } from "../vehicle.js";
 import { docChip, fmtDay, fmtMoney, sendSheet } from "../send.js";
 import { REG_OUTCOME, customerBlock, regField } from "../edit.js";
 
@@ -98,6 +99,27 @@ function newJobSheet(navigate) {
     field(t("Registration"), h("input.input.reg", { name: "reg", maxlength: 10, autocapitalize: "characters", autocomplete: "off", spellcheck: "false", placeholder: "AB12 CDE" }), t("Optional. Links the car if it's already in the Hub.")),
     field(t("Issue"), h("textarea.input", { name: "description", rows: 4, maxlength: 4000, placeholder: t("What the customer said, symptoms, fault codes") })),
   );
+  // Look the car up as soon as the reg is typed, so it's clear it's the right one before the job is made.
+  const regInput = form.querySelector('[name="reg"]');
+  const preview = h("div.stack", { style: "gap:8px", hidden: true });
+  regInput.closest(".field").after(preview);
+  let lookupSeq = 0;
+  regInput.addEventListener("change", async () => {
+    const r = regInput.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const mine = ++lookupSeq;
+    if (r.length < 2) { preview.hidden = true; return; }
+    preview.hidden = false;
+    preview.replaceChildren(h("span.muted.small", t("Checking with DVLA…")));
+    try {
+      const { lookup } = await api(`/api/vehicles/lookup/${encodeURIComponent(r)}`);
+      if (mine !== lookupSeq) return;
+      if (!lookup.found) { preview.replaceChildren(h("p.hint", { style: "margin:0" }, t("DVLA has no record of {reg}. Check the registration.", { reg: formatReg(r) }))); return; }
+      const v = { ...lookup, reg: r };
+      preview.replaceChildren(
+        h("strong", [carLine(v), v.colour ? t(titleCase(v.colour)) : null].filter(Boolean).join(" · ")),
+        h("div", { style: "display:flex;gap:8px;flex-wrap:wrap" }, vehicleChips(v)));
+    } catch { if (mine === lookupSeq) preview.hidden = true; }
+  });
   const submit = h("button.btn.primary", { type: "submit" }, t("Create job"));
   form.append(h("div.sheet-actions", { style: "margin-top:0" }, submit));
   const close = sheet(t("New job"), form);
@@ -161,6 +183,8 @@ async function renderDetail(view, id, { navigate, refreshCounts }) {
       c.phone ? h("a.btn.primary", { href: `tel:${c.phone}` }, icon("phone"), fmtPhone(c.phone)) : h("span.muted.small", t("No phone number")),
     ),
   ) : null;
+  const vehicleCard = h("section.card.stack", h("h2.h2", t("Vehicle")),
+    v ? vehiclePanel(v, { onChange: reload }) : h("p.muted", { style: "margin:0" }, t("No registration on this job yet. Add one with Edit job.")));
   const issueCard = h("section.card.stack",
     h("h2.h2", t("Issue")),
     d.job.description ? translatable(d.job.description) : h("p.muted", { style: "margin:0" }, t("No description given.")),
@@ -457,6 +481,7 @@ async function renderDetail(view, id, { navigate, refreshCounts }) {
     h("div.grid-2", { style: "align-items:start" },
       h("div.stack",
         customerCard,
+        vehicleCard,
         issueCard,
         h("section.card.stack", statusBox),
         h("section.card.stack", h("h2.h2", t("Job details")), field(t("Assigned to"), assignee), carForm),

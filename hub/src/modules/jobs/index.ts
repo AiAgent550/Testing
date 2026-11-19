@@ -10,7 +10,7 @@ import { all, first, newId, nextRef, now, run, updateSet } from "../../lib/db";
 import { HttpError, badRequest, forbidden, json, notFound } from "../../lib/http";
 import { int, nullable, oneOf, optional, parse, reg, str, vin } from "../../lib/validate";
 import { setBookingStatus } from "../bookings/service";
-import { changeRegistration, ensureVehicle, retitleForReg, updateVehicle } from "../vehicles/service";
+import { changeRegistration, ensureVehicle, publicVehicle, retitleForReg, updateVehicle } from "../vehicles/service";
 import { latestSuggestion } from "../ai/service";
 import { notify } from "../notifications";
 import { formatReg, getJob, openJobForBooking, readVehicle, soft } from "./service";
@@ -73,11 +73,7 @@ async function jobDetail(ctx: Ctx) {
     latestSuggestion(env, job.id),
     job.assigned_to ? first<{ name: string }>(env, "SELECT name FROM users WHERE id = ?", job.assigned_to) : null,
   ]);
-  const v = vehicle && {
-    id: vehicle.id, reg: vehicle.reg, vin: vehicle.vin, make: vehicle.make, model: vehicle.model, colour: vehicle.colour,
-    fuel_type: vehicle.fuel_type, year: vehicle.year, engine_cc: vehicle.engine_cc, last_mileage: vehicle.last_mileage,
-    mot_status: vehicle.mot_status, mot_expiry: vehicle.mot_expiry,
-  };
+  const v = vehicle ? publicVehicle(vehicle) : null;
   return json({
     job: { ...job, assignee_name: assignee?.name ?? null },
     customer, vehicle: v, booking,

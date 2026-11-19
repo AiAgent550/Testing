@@ -9,7 +9,7 @@ import { badRequest, json, notFound } from "../../lib/http";
 import { email, isoDate, isoDateTime, nullable, oneOf, optional, parse, reg, str, ukPhone } from "../../lib/validate";
 import { getSetting } from "../system";
 import { getCustomer } from "../customers/service";
-import { changeRegistration, getVehicle, publicVehicle, retitleForReg } from "../vehicles/service";
+import { changeRegistration, freshVehicle, getVehicle, publicVehicle, retitleForReg } from "../vehicles/service";
 import { likeEscape, phoneSearchDigits } from "../customers/match";
 import { confirmBooking, createBooking, getBooking, setBookingStatus } from "./service";
 import { TRANSITIONS } from "./status";
@@ -63,7 +63,7 @@ async function detail(ctx: Ctx) {
   if (!b) throw notFound("Booking");
   const [customer, vehicle, job] = await Promise.all([
     getCustomer(ctx.env, b.customer_id),
-    b.vehicle_id ? getVehicle(ctx.env, b.vehicle_id) : Promise.resolve(null),
+    b.vehicle_id ? freshVehicle(ctx.env, b.vehicle_id) : Promise.resolve(null),
     first(ctx.env, "SELECT id, ref, title, status, created_at FROM jobs WHERE booking_id = ? ORDER BY created_at LIMIT 1", b.id),
   ]);
   return json({ booking: b, customer, vehicle: vehicle ? publicVehicle(vehicle) : null, job, transitions: TRANSITIONS[b.status] });

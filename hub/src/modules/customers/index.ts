@@ -9,6 +9,7 @@ import { all, now, run, updateSet } from "../../lib/db";
 import { json, notFound } from "../../lib/http";
 import { email, nullable, oneOf, optional, parse, str, ukPhone, normaliseReg } from "../../lib/validate";
 import { getCustomer, matchOrCreateCustomer } from "./service";
+import { freshVehicle, publicVehicle } from "../vehicles/service";
 import { likeEscape, phoneSearchDigits } from "./match";
 
 async function search(ctx: Ctx) {
@@ -36,13 +37,14 @@ async function search(ctx: Ctx) {
 async function detail(ctx: Ctx) {
   const customer = await getCustomer(ctx.env, ctx.params.id);
   if (!customer) throw notFound("Customer");
-  const [vehicles, bookings] = await Promise.all([
-    all(ctx.env, `SELECT id, reg, vin, make, model, colour, fuel_type, year, engine_cc, mot_status, mot_expiry, tax_status, tax_due, last_mileage, looked_up_at
-                    FROM vehicles WHERE customer_id = ? ORDER BY updated_at DESC`, customer.id),
+  const [vehicleIds, bookings] = await Promise.all([
+    all<{ id: string }>(ctx.env, "SELECT id FROM vehicles WHERE customer_id = ? ORDER BY updated_at DESC LIMIT 20", customer.id),
     all(ctx.env, `SELECT b.id, b.ref, b.service, b.status, b.preferred_date, b.scheduled_start, b.created_at, b.location, v.reg, v.make, v.model
                     FROM bookings b LEFT JOIN vehicles v ON v.id = b.vehicle_id
                    WHERE b.customer_id = ? ORDER BY b.created_at DESC LIMIT 100`, customer.id),
   ]);
+  // Cars whose DVLA details are missing or old are looked up again (vehicles module), then shown with the full panel.
+  const vehicles = (await Promise.all(vehicleIds.map(v => freshVehicle(ctx.env, v.id)))).filter(v => v !== null).map(v => publicVehicle(v!));
   return json({ customer, vehicles, bookings });
 }
 

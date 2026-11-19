@@ -3,6 +3,7 @@ import {
   SERVICE_LABELS, api, chip, empty, field, fmtAgo, fmtDate, fmtDateTime, fmtMiles, fmtPhone, h, icon, loading,
   pageHead, plate, segmented, sheet, showFieldErrors, t, toast, translatable,
 } from "../core.js";
+import { vehiclePanel } from "../vehicle.js";
 import { REG_OUTCOME, customerBlock, regField } from "../edit.js";
 
 const STATUS_LABELS = {
@@ -225,25 +226,8 @@ async function renderDetail(view, id, ctx) {
   const vehicleCard = h("section.card.stack", h("h2.h2", t("Vehicle")));
   if (v) {
     vehicleCard.append(
-      h("div", { style: "display:flex;gap:12px;align-items:center;flex-wrap:wrap" }, plate(v.reg), h("strong", carName(v) || t("Details not looked up yet"))),
-      h("dl.kv",
-        h("dt", "MOT"), h("dd", v.mot_expiry ? `${v.mot_status || ""} ${v.mot_status ? "· " : ""}${t("expires {date}", { date: fmtDate(v.mot_expiry) })}` : v.mot_status || t("Unknown")),
-        h("dt", t("Tax")), h("dd", v.tax_status ? `${v.tax_status}${v.tax_due ? ` · ${t("due {date}", { date: fmtDate(v.tax_due) })}` : ""}` : t("Unknown")),
-        h("dt", t("Mileage")), h("dd", v.last_mileage ? fmtMiles(v.last_mileage) : t("Unknown")),
-        h("dt", t("Engine")), h("dd", [v.engine_cc ? `${v.engine_cc} cc` : null, v.fuel_type].filter(Boolean).join(" · ") || t("Unknown")),
-        h("dt", "VIN"), h("dd.mono", v.vin || t("Not recorded")),
-      ),
-      h("div", { style: "display:flex;gap:10px;flex-wrap:wrap" },
-        h("button.btn.small", { type: "button", onclick: () => editVehicle(v, reload) }, t("Edit VIN / mileage")),
-        h("button.btn.small.ghost", { type: "button", onclick: async e => {
-          e.currentTarget.disabled = true;
-          try {
-            const { lookup } = await api(`/api/vehicles/${v.id}/refresh`, { method: "POST" });
-            toast(lookup?.found ? t("Vehicle details refreshed.") : t("No new details: the lookup isn't connected or found nothing."));
-            await reload();
-          } catch (err) { toast(err.message, "bad"); e.currentTarget.disabled = false; }
-        } }, t("Refresh details")),
-      ),
+      vehiclePanel(v, { onChange: reload }),
+      h("div", h("button.btn.small", { type: "button", onclick: () => editVehicle(v, reload) }, t("Edit VIN / mileage"))),
     );
   } else {
     vehicleCard.append(h("p.muted", { style: "margin:0" }, t("No registration on this booking yet. Add one by editing the booking details or the job card.")));

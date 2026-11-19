@@ -763,6 +763,33 @@ export const PL = {
   "That file is too big. The limit is 90 MB. Export a shorter or lower-bitrate version (1080p Reels are usually well under this).": "Ten plik jest za duży. Limit to 90 MB. Wyeksportuj krótszą wersję albo z niższym bitrate (Reelsy 1080p zwykle mieszczą się z zapasem).",
   "Instagram and Facebook aren't set up yet: add the META_APP_ID and META_APP_SECRET secrets to the Hub first.": "Instagram i Facebook nie są jeszcze skonfigurowane: najpierw dodaj do Hubu sekrety META_APP_ID i META_APP_SECRET.",
   "YouTube isn't set up yet: add the GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET secrets to the Hub first.": "YouTube nie jest jeszcze skonfigurowany: najpierw dodaj do Hubu sekrety GOOGLE_CLIENT_ID i GOOGLE_CLIENT_SECRET.",
+
+  // ---------- vehicle panel (DVLA) ----------
+  "Checking with DVLA…": "Sprawdzanie w DVLA…",
+  "DVLA has no record of {reg}. Check the registration.": "DVLA nie ma danych dla {reg}. Sprawdź numer rejestracyjny.",
+  "No registration on this job yet. Add one with Edit job.": "To zlecenie nie ma jeszcze numeru rejestracyjnego. Dodaj go w „Edytuj zlecenie”.",
+  "Car": "Osobowy", "Van": "Dostawczy", "Lorry": "Ciężarowy", "Minibus": "Minibus", "Bus": "Autobus", "Motorbike": "Motocykl",
+  "Black": "Czarny", "White": "Biały", "Grey": "Szary", "Silver": "Srebrny", "Blue": "Niebieski", "Red": "Czerwony", "Green": "Zielony",
+  "Yellow": "Żółty", "Orange": "Pomarańczowy", "Brown": "Brązowy", "Beige": "Beżowy", "Gold": "Złoty", "Purple": "Fioletowy",
+  "Bronze": "Brązowy (metalik)", "Maroon": "Bordowy", "Cream": "Kremowy", "Turquoise": "Turkusowy", "Pink": "Różowy",
+  "MOT due {date}": "MOT do zrobienia {date}",
+  "Taxed until {date}": "Podatek opłacony do {date}",
+  "Taxed": "Podatek opłacony",
+  "Untaxed": "Brak opłaconego podatku",
+  "Marked for export": "Oznaczony do eksportu",
+  "New logbook {date}": "Nowy dowód V5C {date}",
+  "First registered": "Pierwsza rejestracja",
+  "Colour": "Kolor",
+  "Body": "Typ nadwozia",
+  "Emissions": "Emisja",
+  "Logbook (V5C) issued": "Dowód rejestracyjny (V5C) wydany",
+  "Refresh from DVLA": "Odśwież z DVLA",
+  "The logbook was issued recently, so the car may have a new keeper. For keys jobs, check the V5C matches the customer's ID.": "Dowód rejestracyjny wydano niedawno, więc auto mogło zmienić właściciela. Przy kluczach sprawdź, czy V5C zgadza się z dowodem tożsamości klienta.",
+  "MOT history": "Historia MOT",
+  "Pass": "Pozytywny",
+  "Fail": "Negatywny",
+  "Checked {when}": "Sprawdzono {when}",
+  "Not checked with DVLA yet": "Jeszcze nie sprawdzono w DVLA",
 };
 
 // Server messages with variable parts. $1, $2 are the captured parts; a captured part that is itself

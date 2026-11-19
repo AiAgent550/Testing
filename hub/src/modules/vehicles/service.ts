@@ -149,9 +149,29 @@ export async function getVehicle(env: Env, id: string): Promise<VehicleRow | nul
   return first<VehicleRow>(env, "SELECT * FROM vehicles WHERE id = ?", id);
 }
 
-/** A vehicle without the bulky raw API responses, plus a short MOT history taken from them. */
+/** Extra DVLA facts shown on the vehicle panel (kept in the raw response, not in their own columns). */
+export function dvlaExtras(dvlaJson: string | null) {
+  if (!dvlaJson) return null;
+  try {
+    const r = JSON.parse(dvlaJson) as Record<string, unknown>;
+    const s = (k: string) => (typeof r[k] === "string" && (r[k] as string).trim() ? (r[k] as string).trim() : null);
+    const n = (k: string) => (typeof r[k] === "number" ? (r[k] as number) : null);
+    return {
+      first_registered: s("monthOfFirstRegistration"),      // "2016-02"
+      v5c_issued: s("dateOfLastV5CIssued"),                 // logbook last issued: a recent date often means a new keeper
+      marked_for_export: r.markedForExport === true,
+      euro_status: s("euroStatus"),
+      co2: n("co2Emissions"),
+      type_approval: s("typeApproval"),                     // M1 car, N1 van...
+      wheelplan: s("wheelplan"),
+      revenue_weight: n("revenueWeight"),
+    };
+  } catch { return null; }
+}
+
+/** A vehicle without the bulky raw API responses, plus a short MOT history and the extra DVLA facts taken from them. */
 export function publicVehicle(v: VehicleRow) {
-  const { dvla_json: _a, dvsa_json, ...rest } = v;
+  const { dvla_json, dvsa_json, ...rest } = v;
   let mot_tests: { date: string | null; result: string | null; mileage: number | null; expiry: string | null }[] = [];
   if (dvsa_json) {
     try {
@@ -161,7 +181,19 @@ export function publicVehicle(v: VehicleRow) {
       }));
     } catch { /* keep empty */ }
   }
-  return { ...rest, mot_tests };
+  return { ...rest, mot_tests, dvla: dvlaExtras(dvla_json) };
+}
+
+/** The stored vehicle, looked up again first when its DVLA/DVSA details are missing or over a month old. */
+export async function freshVehicle(env: Env, id: string): Promise<VehicleRow | null> {
+  const row = await getVehicle(env, id);
+  if (!row || !isStale(row.looked_up_at) || (!env.DVLA_API_KEY && !env.DVSA_API_KEY)) return row;
+  const full = await safeLookup(env, row.reg);
+  if (full) {
+    try { await applyLookup(env, row.id, full); }
+    catch (err) { console.warn("saving vehicle lookup failed", row.reg, err); }
+  }
+  return getVehicle(env, id);
 }
 
 // ---------- correcting a registration on a job or booking ----------

@@ -3,6 +3,7 @@ import {
   SERVICE_LABELS, api, chip, empty, field, fmtDate, fmtDateTime, fmtMiles, fmtPhone, h, icon, loading,
   pageHead, plate, sheet, showFieldErrors, t, tn, toast, translatable,
 } from "../core.js";
+import { vehiclePanel } from "../vehicle.js";
 
 const STATUS_LABELS = {
   requested: t("Request"), confirmed: t("Confirmed"), in_progress: t("In progress"), completed: t("Completed"), cancelled: t("Cancelled"), no_show: t("No-show"),
@@ -82,11 +83,7 @@ async function renderDetail(view, id, ctx) {
 
   const cars = h("section.card.stack", h("h2.h2", t("Vehicles")),
     vehicles.length
-      ? h("div.list", vehicles.map(v => h("div.row",
-        h("span.title", { style: "display:flex;gap:10px;align-items:center;flex-wrap:wrap" }, plate(v.reg), carName(v) || t("Details not looked up")),
-        v.mot_expiry ? chip(Date.parse(v.mot_expiry) < Date.now() ? "failed" : "sent", `MOT ${fmtDate(v.mot_expiry)}`) : h("span"),
-        h("span.sub", [v.last_mileage ? fmtMiles(v.last_mileage) : null, v.vin ? `VIN ${v.vin}` : null, v.tax_status ? t("Tax: {status}", { status: v.tax_status.toLowerCase() }) : null].filter(Boolean).join(" · ") || t("No extra details yet")),
-      )))
+      ? h("div.stack", { style: "gap:18px" }, vehicles.map((v, i) => h("div", { style: i ? "border-top:1px solid var(--line);padding-top:18px" : "" }, vehiclePanel(v, { onChange: reload }))))
       : h("p.muted", { style: "margin:0" }, t("No cars saved for this customer yet.")),
   );
 
