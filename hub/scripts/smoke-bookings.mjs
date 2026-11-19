@@ -112,7 +112,7 @@ r = await call("/api/vehicles/lookup/!");
 check("invalid registration gives a field error", r.status === 400 && !!r.data?.error?.fields?.reg);
 
 r = await anon("/api/public/vehicle/MK20AMG", { headers: site });
-check("public vehicle lookup returns only safe fields", r.status === 200 && JSON.stringify(Object.keys(r.data).sort()) === JSON.stringify(["colour", "found", "make", "model", "year"]) && r.data.make === "Mercedes-Benz" && r.res.headers.get("access-control-allow-origin") === SITE_ORIGIN, r.data);
+check("public vehicle lookup returns only safe fields", r.status === 200 && JSON.stringify(Object.keys(r.data).sort()) === JSON.stringify(["colour", "engine", "found", "make", "model", "year"]) && r.data.make === "Mercedes-Benz" && r.res.headers.get("access-control-allow-origin") === SITE_ORIGIN, r.data);
 r = await anon("/api/public/vehicle/MK20AMG", { headers: { origin: "https://evil.example" } });
 check("public vehicle lookup refuses other origins", r.status === 403);
 

@@ -58,6 +58,9 @@ async function startSetup() {
   show("step-setup");
 }
 
+// Where to go after signing in: the page a link pointed at (e.g. a job from a [JOB] email), else the dashboard.
+const target = /^#\/[a-z]+(\/[A-Za-z0-9_-]+){0,3}$/.test(location.hash) ? location.hash : "";
+const afterSignIn = () => "/app/" + target;
 const inviteToken = (location.hash.match(/^#invite=([0-9a-f]{64})$/) || [])[1];
 
 async function startInvite() {
@@ -94,7 +97,7 @@ async function resume() {
   try {
     const me = await call("/api/auth/me");
     if (me.lang && me.lang !== getLang()) applyLang(me.lang);
-    if (me.mfa_ok) return location.replace("/app/");
+    if (me.mfa_ok) return location.replace(afterSignIn());
     if (me.totp_enabled) show("step-totp"); else await startSetup();
   } catch { show("step-password"); }
 }
@@ -116,7 +119,7 @@ for (const [formId, inputId, errId] of [["step-setup", "setup-code", "err-setup"
     const form = e.currentTarget; $(errId).hidden = true; busy(form, true);
     try {
       await call("/api/auth/totp", "POST", { code: $(inputId).value.replace(/\s/g, "") });
-      location.replace("/app/");
+      location.replace(afterSignIn());
     } catch (err) { fail(errId, err.message); }
     finally { busy(form, false); }
   });

@@ -14,6 +14,8 @@ import { setBookingStatus } from "../bookings/service";
 import { changeRegistration, ensureVehicle, publicVehicle, retitleForReg, updateVehicle } from "../vehicles/service";
 import { latestSuggestion } from "../ai/service";
 import { notify } from "../notifications";
+import { sendStaffAlert } from "../notifications/alerts";
+import { engineLabel } from "../vehicles/names";
 import { formatReg, getJob, openJobForBooking, readVehicle, soft } from "./service";
 import { ACTIVE_STATUSES, canTransition, transitionStamps } from "./status";
 import { serveStored } from "../../lib/storage";
@@ -92,6 +94,42 @@ async function jobDetail(ctx: Ctx) {
   });
 }
 
+// ---------- email to the workshop inbox ([JOB] ...) ----------
+/** Sends "[JOB] J-2016 · Timing chain · HW65 KBU" to the business mailbox with the job's details and a link
+ *  that opens the job in the Hub. Runs after the response; never fails the request. */
+function jobAlert(ctx: Ctx, jobId: string, event: "new" | "completed") {
+  const { env } = ctx;
+  const actor = userOf(ctx).name;
+  const send = async () => {
+    const job = await getJob(env, jobId);
+    if (!job) return;
+    const [v, c, booking, assignee] = await Promise.all([
+      readVehicle(env, job.vehicle_id),
+      job.customer_id ? first<{ name: string; phone: string | null; email: string | null }>(env, "SELECT name, phone, email FROM customers WHERE id = ?", job.customer_id) : null,
+      job.booking_id ? first<{ ref: string }>(env, "SELECT ref FROM bookings WHERE id = ?", job.booking_id) : null,
+      job.assigned_to ? first<{ name: string }>(env, "SELECT name FROM users WHERE id = ?", job.assigned_to) : null,
+    ]);
+    const reg = v?.reg ? formatReg(v.reg) : null;
+    const car = v ? [[v.make, v.model, v.year].filter(Boolean).join(" "), [engineLabel(v.make, v.engine_cc, v.fuel_type), v.colour].filter(Boolean).join(", ")].filter(Boolean).join(" · ") : null;
+    const phone = c?.phone?.startsWith("+44") ? "0" + c.phone.slice(3) : c?.phone ?? null;
+    const day = job.scheduled_date ? `${noteDay(job.scheduled_date)}${job.scheduled_time ? ` at ${job.scheduled_time}` : ""}${job.duration_days > 1 ? ` (${job.duration_days} days)` : ""}` : "Not on the calendar yet";
+    const flags = parseFlags(job.flags).map(f => FLAG_NOTES[f]).join(", ");
+    await sendStaffAlert(env, {
+      kind: "JOB",
+      subject: [job.ref, event === "completed" ? "Completed" : null, job.title.split(" · ")[0], reg],
+      lines: [
+        ["Job", `${job.ref}${event === "completed" ? " (completed)" : ""}`], ["What", job.title], ["Registration", reg], ["Vehicle", car],
+        ["Customer", c?.name ?? null], ["Phone", phone], ["Email", c?.email ?? null],
+        ["Booked in", day], ["Booking", booking?.ref ?? null], ["Issue", job.description], ["Status", flags || null],
+        ["Assigned to", assignee?.name ?? null], [event === "completed" ? "Completed by" : "Created by", actor],
+      ],
+      link: `${env.APP_ORIGIN}/app/#/jobs/${job.id}`,
+      button: "Open job",
+    });
+  };
+  ctx.exec.waitUntil(send().catch(err => console.warn("job alert failed", err)));
+}
+
 // ---------- create ----------
 async function createJob(ctx: Ctx) {
   const { env } = ctx;
@@ -131,13 +169,17 @@ async function createJob(ctx: Ctx) {
     input.scheduled_date ?? null, input.scheduled_date ? input.scheduled_time ?? null : null, input.duration_days ?? 1, user.id, t, t);
   await audit(env, user.id, "job.create", "job", jobId, { ref, vehicle_id: vehicleId, customer_id: input.customer_id ?? null });
   await notify(env, { kind: "job_new", actorId: user.id, link: `#/jobs/${jobId}`, tag: `job-${jobId}`, params: { ref, title, actor: user.name } }, ctx.exec);
+  jobAlert(ctx, jobId, "new");
   return json({ job: await getJob(env, jobId) }, 201);
 }
 
 async function createFromBooking(ctx: Ctx) {
   const user = userOf(ctx);
   const { job, created } = await openJobForBooking(ctx.env, ctx.params.bookingId, user.id);
-  if (created) await notify(ctx.env, { kind: "job_new", actorId: user.id, link: `#/jobs/${job.id}`, tag: `job-${job.id}`, params: { ref: job.ref, title: job.title, actor: user.name } }, ctx.exec);
+  if (created) {
+    await notify(ctx.env, { kind: "job_new", actorId: user.id, link: `#/jobs/${job.id}`, tag: `job-${job.id}`, params: { ref: job.ref, title: job.title, actor: user.name } }, ctx.exec);
+    jobAlert(ctx, job.id, "new");
+  }
   return json({ job, created }, created ? 201 : 200);
 }
 
@@ -239,6 +281,7 @@ async function updateJob(ctx: Ctx) {
   const updated = (await getJob(env, job.id))!;
   const about = { ref: job.ref, title: updated.title, actor: user.name };
   const STATUS_KIND = { in_progress: "job_started", completed: "job_completed", cancelled: "job_cancelled" } as const;
+  if (moving && input.status === "completed") jobAlert(ctx, job.id, "completed");
   if (moving && input.status! in STATUS_KIND) {
     await notify(env, { kind: STATUS_KIND[input.status as keyof typeof STATUS_KIND], actorId: user.id, link: `#/jobs/${job.id}`, tag: `job-${job.id}`, params: about }, ctx.exec);
   }
