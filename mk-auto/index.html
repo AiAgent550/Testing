@@ -208,6 +208,12 @@ a { color: inherit; }
 .bf input.plate:focus { box-shadow: 0 0 0 3px rgba(246,210,74,.25); }
 .bf-hint { margin: 0; font-size: 14px; color: var(--steel); min-height: 1.4em; }
 .bf-hint.found { color: var(--led); }
+/* The car DVLA found for the registration, shown under the plate. */
+.bf-car { display: flex; align-items: center; gap: 14px; margin-top: 2px; padding: 14px 16px; border: 1px solid rgba(191,227,255,.22); border-radius: 14px; background: linear-gradient(180deg, rgba(191,227,255,.06), rgba(191,227,255,.02)); }
+.bf-car[hidden] { display: none; }
+.bf-car svg { flex: none; width: 26px; height: 26px; color: var(--led); }
+.bf-car b { display: block; font: 600 19px/1.25 var(--body); color: var(--chrome); }
+.bf-car span { display: block; margin-top: 2px; font-size: 15px; color: var(--mist); }
 .bf-err { margin: 0; font-size: 14px; color: #ff8a8a; }
 .bf-err:empty { display: none; }
 .pills { display: flex; flex-wrap: wrap; gap: 10px; }
@@ -479,6 +485,7 @@ body::after {
           <div class="bf">
             <label for="bf-reg">Registration</label>
             <input id="bf-reg" class="plate" name="reg" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="10" placeholder="AB12 CDE" aria-describedby="bf-reg-found bf-reg-err">
+            <div class="bf-car" id="bf-car" hidden translate="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13l2-5.5A2 2 0 0 1 6.9 6h10.2a2 2 0 0 1 1.9 1.5L21 13v5h-2.5M3 13v5h2.5M3 13h18"/><circle cx="7.5" cy="17.5" r="1.8"/><circle cx="16.5" cy="17.5" r="1.8"/></svg><div><b id="bf-car-name"></b><span id="bf-car-spec"></span></div></div>
             <p class="bf-hint" id="bf-reg-found" aria-live="polite"></p>
             <p class="bf-err" id="bf-reg-err"></p>
           </div>
@@ -573,19 +580,26 @@ body::after {
       });
 
       const normReg = s => String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-      const describe = v => [[v.year, v.make, v.model].filter(Boolean).join(" "), v.colour ? String(v.colour).toLowerCase() : ""].filter(Boolean).join(", ");
+      const carBox = $("bf-car");
+      const carName = v => [v.make, v.model, v.year].filter(Boolean).join(" ");           // "Audi A4 2011"
+      const carSpec = v => [v.engine, v.colour].filter(Boolean).join(" · ");               // "2.0 TDI · Grey"
       let lastReg = "";
       form.elements.reg.addEventListener("blur", async () => {
         const reg = normReg(form.elements.reg.value);
         if (reg === lastReg) return;
         lastReg = reg;
-        regOut.textContent = ""; regOut.classList.remove("found");
+        regOut.textContent = ""; regOut.classList.remove("found"); carBox.hidden = true;
         if (reg.length < 2) return;
         try {
           const res = await fetch(hub + "/api/public/vehicle/" + encodeURIComponent(reg));
           if (!res.ok || reg !== lastReg) return;
           const v = await res.json();
-          if (v.found && describe(v)) { regOut.textContent = describe(v); regOut.classList.add("found"); }
+          if (v.found && carName(v)) {
+            $("bf-car-name").textContent = carName(v);
+            $("bf-car-spec").textContent = carSpec(v);
+            carBox.hidden = false;
+            regOut.textContent = "Found it. Not your car? Check the registration.";
+          }
           else regOut.textContent = "We couldn't find that registration. Check it, or send it anyway.";
         } catch (e) { /* lookup is a nicety; the form still works */ }
       });

@@ -4,7 +4,7 @@ import {
   api, chip, empty, field, fmtAgo, fmtPhone, formatReg, h, icon, loading, pageHead, plate, segmented, sheet, showFieldErrors, t, tn, toast, translatable, N_, jobTitle,
 } from "../core.js";
 import { fmtSize, isVideo, uploadPhoto, uploadVideo } from "../media.js";
-import { vehiclePanel, vehicleChips } from "../vehicle.js";
+import { carName, carSpec, vehiclePanel, vehicleChips } from "../vehicle.js";
 import { docChip, fmtDay, fmtMoney, sendSheet } from "../send.js";
 import { REG_OUTCOME, customerBlock, regField } from "../edit.js";
 
@@ -116,7 +116,8 @@ function newJobSheet(navigate) {
       if (!lookup.found) { preview.replaceChildren(h("p.hint", { style: "margin:0" }, t("DVLA has no record of {reg}. Check the registration.", { reg: formatReg(r) }))); return; }
       const v = { ...lookup, reg: r };
       preview.replaceChildren(
-        h("strong", [carLine(v), v.colour ? t(titleCase(v.colour)) : null].filter(Boolean).join(" · ")),
+        h("div", { style: "display:grid;gap:2px;padding:12px 14px;border:1px solid var(--line-strong);border-radius:12px;background:var(--raise)" },
+          h("strong", { style: "font-size:17px" }, carName(v)), carSpec(v) ? h("span.muted", carSpec(v)) : null),
         h("div", { style: "display:flex;gap:8px;flex-wrap:wrap" }, vehicleChips(v)));
     } catch { if (mine === lookupSeq) preview.hidden = true; }
   });

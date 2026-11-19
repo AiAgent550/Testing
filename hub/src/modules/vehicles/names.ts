@@ -28,3 +28,16 @@ export function tidyColour(input: string | null | undefined): string | null {
   const s = String(input).trim().toLowerCase();
   return s ? s.replace(/(^|\s|-)([a-z])/g, (_m, a: string, b: string) => a + b.toUpperCase()) : null;
 }
+
+const VAG = new Set(["audi", "volkswagen", "vw", "seat", "skoda", "cupra"]);
+
+/** "2.0 TDI", "2.2 diesel", "1.4 petrol", "Electric" - engine size from DVLA's cc plus a short fuel badge.
+ *  VAG diesels are always badged TDI; other makes vary by model and year, so they just say the fuel. */
+export function engineLabel(make: string | null | undefined, cc: number | null | undefined, fuel: string | null | undefined): string | null {
+  const f = String(fuel || "").toLowerCase();
+  if (/electric/.test(f) && !/hybrid/.test(f)) return "Electric";
+  const litres = cc && cc > 0 ? (Math.round(cc / 100) / 10).toFixed(1) : null;
+  const badge = /diesel|heavy oil/.test(f) ? (VAG.has(String(make || "").toLowerCase()) ? "TDI" : "diesel")
+    : /hybrid/.test(f) ? "hybrid" : /petrol/.test(f) ? "petrol" : f || null;
+  return [litres, badge].filter(Boolean).join(" ") || null;
+}

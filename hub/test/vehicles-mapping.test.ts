@@ -146,3 +146,17 @@ describe("staleness", () => {
     expect(isStale("2026-10-01T12:00:00Z", now)).toBe(false);
   });
 });
+
+import { engineLabel } from "../src/modules/vehicles/names";
+describe("engine label", () => {
+  it("rounds cc to litres and badges VAG diesels as TDI", () => {
+    expect(engineLabel("Audi", 1968, "Diesel")).toBe("2.0 TDI");
+    expect(engineLabel("Volkswagen", 1598, "DIESEL")).toBe("1.6 TDI");
+    expect(engineLabel("Ford", 2198, "Diesel")).toBe("2.2 diesel");
+    expect(engineLabel("Mercedes-Benz", 2143, "Diesel")).toBe("2.1 diesel");
+    expect(engineLabel("BMW", 2993, "Petrol")).toBe("3.0 petrol");
+    expect(engineLabel("Toyota", 1798, "Hybrid Electric")).toBe("1.8 hybrid");
+    expect(engineLabel("Tesla", 0, "Electricity")).toBe("Electric");
+    expect(engineLabel(null, null, null)).toBeNull();
+  });
+});

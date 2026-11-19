@@ -790,6 +790,7 @@ export const PL = {
   "Fail": "Negatywny",
   "Checked {when}": "Sprawdzono {when}",
   "Not checked with DVLA yet": "Jeszcze nie sprawdzono w DVLA",
+  "Electric": "Elektryczny", "diesel": "diesel", "hybrid": "hybryda", "petrol": "benzyna",
 };
 
 // Server messages with variable parts. $1, $2 are the captured parts; a captured part that is itself

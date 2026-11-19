@@ -13,7 +13,19 @@ void [t("Car"), t("Van"), t("Lorry"), t("Minibus"), t("Bus"), t("Motorbike")];
 void [t("Black"), t("White"), t("Grey"), t("Silver"), t("Blue"), t("Red"), t("Green"), t("Yellow"), t("Orange"), t("Brown"), t("Beige"), t("Gold"), t("Purple"), t("Bronze"), t("Maroon"), t("Cream"), t("Turquoise"), t("Pink")];
 
 const titleCase = s => String(s || "").toLowerCase().replace(/(^|[\s-])([a-z])/g, (_, a, b) => a + b.toUpperCase());
-export const carName = v => [v.year, v.make, v.model].filter(Boolean).join(" ");
+export const carName = v => [v.make, v.model, v.year].filter(Boolean).join(" ");
+const VAG = new Set(["audi", "volkswagen", "vw", "seat", "skoda", "cupra"]);
+/** "2.0 TDI", "2.2 diesel", "1.4 petrol" (same rules as the Hub's server, vehicles/names.ts). */
+export function engineLabel(v) {
+  const f = String(v.fuel_type || "").toLowerCase();
+  if (/electric/.test(f) && !/hybrid/.test(f)) return t("Electric");
+  const litres = v.engine_cc > 0 ? (Math.round(v.engine_cc / 100) / 10).toFixed(1) : null;
+  const badge = /diesel|heavy oil/.test(f) ? (VAG.has(String(v.make || "").toLowerCase()) ? "TDI" : t("diesel"))
+    : /hybrid/.test(f) ? t("hybrid") : /petrol/.test(f) ? t("petrol") : null;
+  return [litres, badge].filter(Boolean).join(" ");
+}
+/** "2.0 TDI · Grey" */
+export const carSpec = v => [engineLabel(v), v.colour ? t(titleCase(v.colour)) : null].filter(Boolean).join(" · ");
 
 /** Status chips: MOT, tax, export flag and a recently issued logbook (often a new keeper). */
 export function vehicleChips(v) {
@@ -64,7 +76,10 @@ export function vehiclePanel(v, { onChange } = {}) {
   const chips = vehicleChips(v);
   const recentKeeper = x.v5c_issued && Date.now() - Date.parse(x.v5c_issued) < 90 * DAY;
   return h("div.stack", { style: "gap:12px" },
-    h("div", { style: "display:flex;gap:12px;align-items:center;flex-wrap:wrap" }, plate(v.reg), h("strong", carName(v) || t("Details not looked up yet"))),
+    h("div", { style: "display:flex;gap:14px;align-items:center;flex-wrap:wrap" }, plate(v.reg),
+      h("div", { style: "display:grid;gap:2px" },
+        h("strong", { style: "font-size:18px" }, carName(v) || t("Details not looked up yet")),
+        carSpec(v) ? h("span.muted", carSpec(v)) : null)),
     chips.length ? h("div", { style: "display:flex;gap:8px;flex-wrap:wrap" }, chips) : null,
     recentKeeper ? h("p.hint", { style: "margin:0" }, t("The logbook was issued recently, so the car may have a new keeper. For keys jobs, check the V5C matches the customer's ID.")) : null,
     rows.length ? h("dl.kv", rows.flatMap(([k, val]) => [h("dt", k), h(k === "VIN" ? "dd.mono" : "dd", val)])) : null,

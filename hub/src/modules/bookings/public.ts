@@ -1,6 +1,7 @@
 // Endpoints the public website calls: the booking form and the registration autofill.
 // Only the website's own origin (env.SITE_ORIGIN) may call them (CORS + an explicit Origin check),
 // they are rate limited per IP, and the form carries a honeypot field for bots.
+import { engineLabel } from "../vehicles/names";
 import type { Ctx, Handler } from "../../lib/router";
 import { SERVICES } from "../../lib/types";
 import { HttpError, badRequest, clientIp, errorResponse, forbidden, json } from "../../lib/http";
@@ -113,5 +114,5 @@ export const publicVehicle: Handler = sitePublic(async ctx => {
   const { reg: r } = parse({ reg: ctx.params.reg }, { reg: reg() });
   await record(env, "public_vehicle", ip, true);
   const l = await lookupVehicle(env, r);
-  return json({ found: l.found, make: l.make, model: l.model, colour: l.colour, year: l.year });
+  return json({ found: l.found, make: l.make, model: l.model, colour: l.colour, year: l.year, engine: engineLabel(l.make, l.engine_cc, l.fuel_type) });
 });
