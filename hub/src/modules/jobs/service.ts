@@ -1,4 +1,5 @@
 // Contract other modules use, plus read helpers shared by the jobs routes and the ai module.
+import { ukDay } from "./schedule";
 import type { Env } from "../../lib/env";
 import type { BookingRow, JobRow, Service, VehicleRow } from "../../lib/types";
 import { audit } from "../../lib/audit";
@@ -67,11 +68,11 @@ export async function openJobForBooking(env: Env, bookingId: string, actorId: st
   // Insert only if no other request opened a job for this booking in the meantime.
   const res = await run(
     env,
-    `INSERT INTO jobs (id, ref, booking_id, customer_id, vehicle_id, title, description, status, mileage, created_by, created_at, updated_at)
-     SELECT ?, ?, ?, ?, ?, ?, ?, 'open', ?, ?, ?, ?
+    `INSERT INTO jobs (id, ref, booking_id, customer_id, vehicle_id, title, description, status, mileage, scheduled_date, created_by, created_at, updated_at)
+     SELECT ?, ?, ?, ?, ?, ?, ?, 'open', ?, ?, ?, ?, ?
       WHERE NOT EXISTS (SELECT 1 FROM jobs WHERE booking_id = ? AND status != 'cancelled')`,
     id, ref, booking.id, booking.customer_id, booking.vehicle_id, jobTitleForBooking(booking.service, vehicle?.reg),
-    booking.description, null, actorId, t, t, booking.id,
+    booking.description, null, ukDay(booking.scheduled_start) ?? booking.preferred_date ?? null, actorId, t, t, booking.id,
   );
   if (!res.meta.changes) {
     const raced = await first<JobRow>(env, existingSql, bookingId);

@@ -33,6 +33,7 @@ export interface JobRow {
   id: string; ref: string; booking_id: string | null; customer_id: string | null; vehicle_id: string | null;
   title: string; description: string | null; status: JobStatus; assigned_to: string | null; mileage: number | null;
   started_at: string | null; completed_at: string | null; created_by: string | null; created_at: string; updated_at: string;
+  scheduled_date: string | null; scheduled_time: string | null; duration_days: number; flags: string;
 }
 
 export type Platform = "instagram" | "facebook" | "youtube" | "tiktok" | "google";

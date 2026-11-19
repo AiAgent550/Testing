@@ -8,7 +8,8 @@ import { JOB_STATUSES } from "../../lib/types";
 import { audit } from "../../lib/audit";
 import { all, first, newId, nextRef, now, run, updateSet } from "../../lib/db";
 import { HttpError, badRequest, forbidden, json, notFound } from "../../lib/http";
-import { int, nullable, oneOf, optional, parse, reg, str, vin } from "../../lib/validate";
+import { int, isoDate, nullable, oneOf, optional, parse, reg, str, vin } from "../../lib/validate";
+import { FLAG_NOTES, cleanFlags, noteDay, parseFlags } from "./schedule";
 import { setBookingStatus } from "../bookings/service";
 import { changeRegistration, ensureVehicle, publicVehicle, retitleForReg, updateVehicle } from "../vehicles/service";
 import { latestSuggestion } from "../ai/service";
@@ -24,6 +25,12 @@ const id = (prefix: string) => (v: unknown, f: string) => {
   return s;
 };
 
+const hhmm = () => (v: unknown, f: string) => {
+  const s = str({ max: 5 })(v, f);
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(s)) throw badRequest("Some fields need fixing.", { [f]: "Use a time like 09:30." });
+  return s;
+};
+
 async function mustGetJob(ctx: Ctx): Promise<JobRow> {
   const job = await getJob(ctx.env, ctx.params.id);
   if (!job) throw notFound("Job");
@@ -33,6 +40,7 @@ async function mustGetJob(ctx: Ctx): Promise<JobRow> {
 // ---------- list and detail ----------
 const LIST_SQL = `
   SELECT j.id, j.ref, j.title, j.status, j.assigned_to, j.booking_id, j.customer_id, j.vehicle_id, j.mileage,
+         j.scheduled_date, j.scheduled_time, j.duration_days, j.flags,
          j.started_at, j.completed_at, j.created_at, j.updated_at,
          v.reg, v.make, v.model, v.year,
          c.name AS customer_name, c.phone AS customer_phone,
@@ -56,6 +64,7 @@ async function listJobs(ctx: Ctx) {
     params.push(...wanted);
   }
   if (q.get("mine") === "1") { where.push("j.assigned_to = ?"); params.push(userOf(ctx).id); }
+  if (q.get("unscheduled") === "1") where.push("j.scheduled_date IS NULL");
   const sql = `${LIST_SQL} ${where.length ? "WHERE " + where.join(" AND ") : ""} ${ORDER} LIMIT 200`;
   return json({ jobs: await all(ctx.env, sql, ...params) });
 }
@@ -75,7 +84,7 @@ async function jobDetail(ctx: Ctx) {
   ]);
   const v = vehicle ? publicVehicle(vehicle) : null;
   return json({
-    job: { ...job, assignee_name: assignee?.name ?? null },
+    job: { ...job, flags: parseFlags(job.flags), assignee_name: assignee?.name ?? null },
     customer, vehicle: v, booking,
     notes: (notes as { user_id: string | null }[]).map(n => ({ ...n, mine: n.user_id === userOf(ctx).id })),
     files: files.map(({ preview_key, ...f }) => fileView(job.id, { ...f, preview_key })),
@@ -93,6 +102,9 @@ async function createJob(ctx: Ctx) {
     customer_id: optional(id("cus")),
     vehicle_id: optional(id("veh")),
     reg: optional(reg()),
+    scheduled_date: optional(isoDate()),
+    scheduled_time: optional(hhmm()),
+    duration_days: optional(int({ min: 1, max: 30 })),
   });
   if (input.customer_id && !(await first(env, "SELECT 1 AS ok FROM customers WHERE id = ?", input.customer_id))) {
     throw badRequest("Some fields need fixing.", { customer_id: "That customer wasn't found." });
@@ -113,9 +125,10 @@ async function createJob(ctx: Ctx) {
   const ref = await nextRef(env, "job_ref", "J");
   const t = now();
   await run(env,
-    `INSERT INTO jobs (id, ref, customer_id, vehicle_id, title, description, status, created_by, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, 'open', ?, ?, ?)`,
-    jobId, ref, input.customer_id ?? null, vehicleId, title, input.description ?? null, user.id, t, t);
+    `INSERT INTO jobs (id, ref, customer_id, vehicle_id, title, description, status, scheduled_date, scheduled_time, duration_days, created_by, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, 'open', ?, ?, ?, ?, ?, ?)`,
+    jobId, ref, input.customer_id ?? null, vehicleId, title, input.description ?? null,
+    input.scheduled_date ?? null, input.scheduled_date ? input.scheduled_time ?? null : null, input.duration_days ?? 1, user.id, t, t);
   await audit(env, user.id, "job.create", "job", jobId, { ref, vehicle_id: vehicleId, customer_id: input.customer_id ?? null });
   await notify(env, { kind: "job_new", actorId: user.id, link: `#/jobs/${jobId}`, tag: `job-${jobId}`, params: { ref, title, actor: user.name } }, ctx.exec);
   return json({ job: await getJob(env, jobId) }, 201);
@@ -141,8 +154,27 @@ async function updateJob(ctx: Ctx) {
     mileage: nullable(int({ min: 0, max: 999999 })),
     reg: nullable(reg()),
     customer_id: nullable(id("cus")),
+    scheduled_date: nullable(isoDate()),
+    scheduled_time: nullable(hhmm()),
+    duration_days: optional(int({ min: 1, max: 30 })),
   });
-  const patch: Record<string, unknown> = { title: input.title, description: input.description, mileage: input.mileage };
+  const rawBody = (await ctx.body()) as Record<string, unknown>;
+  const patch: Record<string, unknown> = {
+    title: input.title, description: input.description, mileage: input.mileage,
+    scheduled_date: input.scheduled_date, scheduled_time: input.scheduled_date === null ? null : input.scheduled_time, duration_days: input.duration_days,
+  };
+  // Quick status flags: switching one on writes a note, so the job's history shows who did what and when.
+  const notesToAdd: string[] = [];
+  if (rawBody.flags !== undefined) {
+    const before = parseFlags(job.flags), after = cleanFlags(rawBody.flags);
+    if (JSON.stringify(before) !== JSON.stringify(after)) {
+      patch.flags = JSON.stringify(after);
+      for (const f of after) if (!before.includes(f)) notesToAdd.push(FLAG_NOTES[f]);
+    }
+  }
+  if (input.scheduled_date !== undefined && input.scheduled_date !== job.scheduled_date) {
+    notesToAdd.push(input.scheduled_date ? (job.scheduled_date ? `Rescheduled to ${noteDay(input.scheduled_date)}` : `Booked in for ${noteDay(input.scheduled_date)}`) : "Taken off the calendar");
+  }
   const extraAudit: Record<string, unknown> = {};
 
   // Customer: relink the job (and its booking) to another existing customer.
@@ -184,9 +216,15 @@ async function updateJob(ctx: Ctx) {
     patch.status = input.status;
     Object.assign(patch, transitionStamps(job, input.status!, t));
   }
-  const { sql, params } = updateSet(patch, ["title", "description", "mileage", "assigned_to", "status", "started_at", "completed_at", "customer_id", "vehicle_id"]);
+  const { sql, params } = updateSet(patch, ["title", "description", "mileage", "assigned_to", "status", "started_at", "completed_at", "customer_id", "vehicle_id", "scheduled_date", "scheduled_time", "duration_days", "flags"]);
   if (!sql) return json({ job });
   await run(env, `UPDATE jobs SET ${sql}, updated_at = ? WHERE id = ?`, ...params, t, job.id);
+  for (const body of notesToAdd) {
+    await run(env, "INSERT INTO job_notes (id, job_id, user_id, body, created_at) VALUES (?, ?, ?, ?, ?)", newId("jnt"), job.id, user.id, body, t);
+  }
+  if (notesToAdd.length) {
+    await notify(env, { kind: "job_note", actorId: user.id, link: `#/jobs/${job.id}`, tag: `job-${job.id}-note`, params: { ref: job.ref, note: notesToAdd.join(" · "), actor: user.name } }, ctx.exec);
+  }
   // Keep the booking pointing at the same car and customer as its job.
   if (job.booking_id) {
     const bset = updateSet({ vehicle_id: bookingVehicle, customer_id: patch.customer_id ?? undefined }, ["vehicle_id", "customer_id"]);

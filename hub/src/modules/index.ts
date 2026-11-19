@@ -12,5 +12,6 @@ import social from "./social";
 import notifications from "./notifications";
 import invoices from "./invoices";
 import mail from "./mail";
+import calendar from "./calendar";
 
-export const modules: Module[] = [auth, system, customers, vehicles, bookings, jobs, ai, leads, social, notifications, invoices, mail];
+export const modules: Module[] = [auth, system, customers, vehicles, bookings, jobs, ai, leads, social, notifications, invoices, mail, calendar];

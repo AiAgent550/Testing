@@ -5,6 +5,7 @@ import {
 } from "../core.js";
 import { fmtSize, isVideo, uploadPhoto, uploadVideo } from "../media.js";
 import { carName, carSpec, vehiclePanel, vehicleChips } from "../vehicle.js";
+import { dayLong, flagLabel, flagToggles, scheduleFields, scheduleNoteText } from "../schedule.js";
 import { docChip, fmtDay, fmtMoney, sendSheet } from "../send.js";
 import { REG_OUTCOME, customerBlock, regField } from "../edit.js";
 
@@ -84,7 +85,8 @@ async function renderList(view, { navigate }) {
 
 function jobRow(j) {
   const car = carLine(j);
-  const sub = [j.reg ? jobTitle(j.title) : null, j.customer_name, j.ref, j.assignee_name ? t("with {name}", { name: j.assignee_name.split(" ")[0] }) : null].filter(Boolean).join(" · ");
+  const flags = (() => { try { return JSON.parse(j.flags || "[]"); } catch { return []; } })();
+  const sub = [j.reg ? jobTitle(j.title) : null, j.customer_name, j.scheduled_date ? dayLong(j.scheduled_date) : null, ...flags.map(flagLabel), j.ref, j.assignee_name ? t("with {name}", { name: j.assignee_name.split(" ")[0] }) : null].filter(Boolean).join(" · ");
   return h("a.row", { href: `#/jobs/${encodeURIComponent(j.id)}` },
     h("span.title", { style: "display:flex;align-items:center;gap:10px;flex-wrap:wrap" },
       j.reg ? plate(j.reg) : null, h("span", j.reg ? (car || t("Car details not looked up")) : jobTitle(j.title))),
@@ -184,6 +186,23 @@ async function renderDetail(view, id, { navigate, refreshCounts }) {
       c.phone ? h("a.btn.primary", { href: `tel:${c.phone}` }, icon("phone"), fmtPhone(c.phone)) : h("span.muted.small", t("No phone number")),
     ),
   ) : null;
+  // ---- calendar: day booked in, quick status flags ----
+  const sched = scheduleFields(d.job);
+  const scheduleCard = h("section.card.stack",
+    h("div", { style: "display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap" }, sectionTitle(t("Booked in"), "calendar"),
+      d.job.scheduled_date ? h("a.btn.small.ghost", { href: `#/calendar/${d.job.scheduled_date}` }, t("Show in calendar")) : null),
+    h("p", { style: "margin:0;font-weight:600" }, d.job.scheduled_date ? [dayLong(d.job.scheduled_date), d.job.scheduled_time].filter(Boolean).join(", ") : t("Not on the calendar yet.")),
+    sched.el,
+    h("div", h("button.btn", { type: "button", onclick: async e => {
+      const btn = e.currentTarget; btn.disabled = true;
+      try {
+        const v = sched.value();
+        await patch(v, v.scheduled_date ? t("Booked in for {day}.", { day: dayLong(v.scheduled_date) }) : t("Taken off the calendar."));
+        await reload();
+      } catch (err) { toast(err.message, "bad"); btn.disabled = false; }
+    } }, t("Save day"))),
+    h("div.stack", { style: "gap:8px" }, h("span.muted.small", t("Quick updates")), flagToggles(d.job, () => reload())),
+  );
   const vehicleCard = h("section.card.stack", h("h2.h2", t("Vehicle")),
     v ? vehiclePanel(v, { onChange: reload }) : h("p.muted", { style: "margin:0" }, t("No registration on this job yet. Add one with Edit job.")));
   const issueCard = h("section.card.stack",
@@ -281,7 +300,7 @@ async function renderDetail(view, id, { navigate, refreshCounts }) {
         ? h("div.list", d.notes.map(n => h("div.row",
           h("span.title", n.author_name || t("Someone")),
           h("span.muted.small", n.edited_at ? `${fmtAgo(n.created_at)} · ${t("edited")}` : fmtAgo(n.created_at)),
-          h("div", { style: "grid-column:1/-1" }, translatable(n.body)),
+          h("div", { style: "grid-column:1/-1" }, scheduleNoteText(n.body) ? h("p", { style: "margin:0;font-weight:600;color:var(--led)" }, scheduleNoteText(n.body)) : translatable(n.body)),
           n.mine ? h("div", { style: "grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap" },
             h("button.btn.small.ghost", { type: "button", onclick: () => editNote(n) }, t("Edit")),
             h("button.btn.small.ghost", { type: "button", style: "color:var(--bad)", onclick: async () => {
@@ -485,6 +504,7 @@ async function renderDetail(view, id, { navigate, refreshCounts }) {
         vehicleCard,
         issueCard,
         h("section.card.stack", statusBox),
+        scheduleCard,
         h("section.card.stack", h("h2.h2", t("Job details")), field(t("Assigned to"), assignee), carForm),
         h("section.card.stack", moneyBox),
       ),
