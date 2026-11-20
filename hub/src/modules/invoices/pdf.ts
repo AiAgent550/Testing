@@ -182,7 +182,7 @@ export async function renderDocumentPdf(doc: PdfDoc, b: Business): Promise<Uint8
     }
     for (const l of doc.lines.filter(x => x.kind === kind)) {
       const descLines = wrap(l.description, f.bold, 9, COLS.qty - COLS.desc - 60);
-      const rowH = 11 * descLines.length + 6;
+      const rowH = 11 * descLines.length + 4;
       if (y - rowH < 110) y = newPage();
       descLines.forEach((d, i) => page.drawText(d, { x: COLS.desc, y: y - 11 * i, size: 9, font: f.bold, color: INK }));
       spaced(page, qtyLabel(l.qty, l.unit), COLS.qty, y, 9, f.reg, INK, 0, "right");
@@ -190,7 +190,7 @@ export async function renderDocumentPdf(doc: PdfDoc, b: Business): Promise<Uint8
       spaced(page, gbp(lineTotal(l)), COLS.amount, y, 9, f.reg, INK, 0, "right");
       y -= rowH;
       page.drawLine({ start: { x: M, y: y + 6 }, end: { x: W - M, y: y + 6 }, thickness: 0.4, color: LINE });
-      y -= 4;
+      y -= 3;
     }
     y -= 6;
   }
