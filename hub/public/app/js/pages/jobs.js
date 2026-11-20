@@ -207,7 +207,10 @@ async function renderDetail(view, id, { navigate, refreshCounts }) {
     v ? vehiclePanel(v, { onChange: reload }) : h("p.muted", { style: "margin:0" }, t("No registration on this job yet. Add one with Edit job.")));
   const issueCard = h("section.card.stack",
     h("h2.h2", t("Issue")),
-    d.job.description ? translatable(d.job.description) : h("p.muted", { style: "margin:0" }, t("No description given.")),
+    // "Translate" covers the job's title too (typed by whoever made the job, in their language).
+    d.job.description
+      ? translatable(d.job.description, undefined, `${jobTitle(d.job.title)}\n\n${d.job.description}`)
+      : [h("p.muted", { style: "margin:0" }, t("No description given.")), translatable(jobTitle(d.job.title), "margin:0;font-weight:600")],
   );
 
   // ---- status ----

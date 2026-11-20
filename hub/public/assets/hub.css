@@ -228,6 +228,8 @@ button.row { width: 100%; border: 0; background: none; text-align: left; font: i
 .kv { display: grid; grid-template-columns: max-content 1fr; gap: 10px 20px; margin: 0; }
 .kv dt { color: var(--steel); font: 300 10px/1.9 var(--display); letter-spacing: .2em; text-transform: uppercase; }
 .kv dd { margin: 0; overflow-wrap: anywhere; }
+/* On phones (and with longer Polish labels) put each label above its value, so values never get squeezed. */
+@media (max-width: 640px) { .kv { grid-template-columns: minmax(0, 1fr); gap: 2px 0; } .kv dd { margin-bottom: 10px; } .kv dd:last-child { margin-bottom: 0; } }
 
 /* status chips: each tone differs in lightness and fill as well as hue */
 .chip { display: inline-flex; align-items: center; gap: 7px; min-height: 26px; padding: 0 11px; border-radius: 99px; border: 1px solid var(--line-strong); font: 600 12px/1 var(--body); letter-spacing: .02em; color: var(--mist); white-space: nowrap; }
