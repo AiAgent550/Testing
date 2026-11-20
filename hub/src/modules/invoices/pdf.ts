@@ -174,17 +174,30 @@ export async function renderDocumentPdf(doc: PdfDoc, b: Business): Promise<Uint8
   y = tableHead(y);
   const groups: [PdfLine["kind"], string][] = [["part", "Parts"], ["labour", "Labour"], ["other", "Other"]];
   const used = groups.filter(([k]) => doc.lines.some(l => l.kind === k));
+  // Height a line takes: bold title lines, then the lighter work-done lines under it.
+  const rowHeight = (l: PdfLine) => {
+    const [head, ...rest] = pdfSafe(l.description).split("\n");
+    const t = wrap(head, f.bold, 9, COLS.qty - COLS.desc - 60).length;
+    const d = rest.length ? wrap(rest.join("\n"), f.reg, 8.5, COLS.qty - COLS.desc - 30).length : 0;
+    return 11 * t + (d ? 3 + 11 * d : 0) + 4;
+  };
   for (const [kind, title] of used) {
-    if (y < 150) y = newPage();
+    // Keep a group's heading with its first line.
+    const first = doc.lines.find(x => x.kind === kind)!;
+    if (y < 150 || y - 15 - rowHeight(first) < 110) y = newPage();
     if (used.length > 1 || kind !== "other") {
       label(page, f, doc.vehicle_reg && kind === "part" ? `${doc.vehicle_reg} · ${title}` : title, COLS.desc, y);
       y -= 15;
     }
     for (const l of doc.lines.filter(x => x.kind === kind)) {
-      const descLines = wrap(l.description, f.bold, 9, COLS.qty - COLS.desc - 60);
-      const rowH = 11 * descLines.length + 4;
+      // First paragraph is the line's title (bold); any further paragraphs are the work done, in lighter text.
+      const [head, ...rest] = pdfSafe(l.description).split("\n");
+      const titleLines = wrap(head, f.bold, 9, COLS.qty - COLS.desc - 60);
+      const detailLines = rest.length ? wrap(rest.join("\n"), f.reg, 8.5, COLS.qty - COLS.desc - 30) : [];
+      const rowH = rowHeight(l);
       if (y - rowH < 110) y = newPage();
-      descLines.forEach((d, i) => page.drawText(d, { x: COLS.desc, y: y - 11 * i, size: 9, font: f.bold, color: INK }));
+      titleLines.forEach((d, i) => page.drawText(d, { x: COLS.desc, y: y - 11 * i, size: 9, font: f.bold, color: INK }));
+      detailLines.forEach((d, i) => page.drawText(d, { x: COLS.desc + (/^\u2022|^-/.test(d) ? 0 : 7), y: y - 11 * titleLines.length - 3 - 11 * i, size: 8.5, font: f.reg, color: SOFT }));
       spaced(page, qtyLabel(l.qty, l.unit), COLS.qty, y, 9, f.reg, INK, 0, "right");
       spaced(page, gbp(l.unit_pence), COLS.price, y, 9, f.reg, INK, 0, "right");
       spaced(page, gbp(lineTotal(l)), COLS.amount, y, 9, f.reg, INK, 0, "right");
