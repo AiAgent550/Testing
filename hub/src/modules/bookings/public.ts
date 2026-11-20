@@ -114,5 +114,5 @@ export const publicVehicle: Handler = sitePublic(async ctx => {
   const { reg: r } = parse({ reg: ctx.params.reg }, { reg: reg() });
   await record(env, "public_vehicle", ip, true);
   const l = await lookupVehicle(env, r);
-  return json({ found: l.found, make: l.make, model: l.model, colour: l.colour, year: l.year, engine: engineLabel(l.make, l.engine_cc, l.fuel_type) });
+  return json({ found: l.found, make: l.make, model: l.model, colour: l.colour, year: l.year, engine: engineLabel(l.make, l.engine_cc, l.fuel_type, l.model) });
 });

@@ -22,7 +22,8 @@ export function engineLabel(v) {
   const litres = v.engine_cc > 0 ? (Math.round(v.engine_cc / 100) / 10).toFixed(1) : null;
   const badge = /diesel|heavy oil/.test(f) ? (VAG.has(String(v.make || "").toLowerCase()) ? "TDI" : t("diesel"))
     : /hybrid/.test(f) ? t("hybrid") : /petrol/.test(f) ? t("petrol") : null;
-  return [litres, badge].filter(Boolean).join(" ");
+  const shown = badge && v.model && new RegExp(`\\b${badge}\\b`, "i").test(v.model) ? null : badge;
+  return [litres, shown].filter(Boolean).join(" ");
 }
 /** "2.0 TDI · Grey" */
 export const carSpec = v => [engineLabel(v), v.colour ? t(titleCase(v.colour)) : null].filter(Boolean).join(" · ");

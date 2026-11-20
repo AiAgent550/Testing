@@ -110,7 +110,7 @@ function jobAlert(ctx: Ctx, jobId: string, event: "new" | "completed") {
       job.assigned_to ? first<{ name: string }>(env, "SELECT name FROM users WHERE id = ?", job.assigned_to) : null,
     ]);
     const reg = v?.reg ? formatReg(v.reg) : null;
-    const car = v ? [[v.make, v.model, v.year].filter(Boolean).join(" "), [engineLabel(v.make, v.engine_cc, v.fuel_type), v.colour].filter(Boolean).join(", ")].filter(Boolean).join(" · ") : null;
+    const car = v ? [[v.make, v.model, v.year].filter(Boolean).join(" "), [engineLabel(v.make, v.engine_cc, v.fuel_type, v.model), v.colour].filter(Boolean).join(", ")].filter(Boolean).join(" · ") : null;
     const phone = c?.phone?.startsWith("+44") ? "0" + c.phone.slice(3) : c?.phone ?? null;
     const day = job.scheduled_date ? `${noteDay(job.scheduled_date)}${job.scheduled_time ? ` at ${job.scheduled_time}` : ""}${job.duration_days > 1 ? ` (${job.duration_days} days)` : ""}` : "Not on the calendar yet";
     const flags = parseFlags(job.flags).map(f => FLAG_NOTES[f]).join(", ");

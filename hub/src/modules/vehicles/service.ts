@@ -187,7 +187,10 @@ export function publicVehicle(v: VehicleRow) {
 /** The stored vehicle, looked up again first when its DVLA/DVSA details are missing or over a month old. */
 export async function freshVehicle(env: Env, id: string): Promise<VehicleRow | null> {
   const row = await getVehicle(env, id);
-  if (!row || !isStale(row.looked_up_at) || (!env.DVLA_API_KEY && !env.DVSA_API_KEY)) return row;
+  if (!row || (!env.DVLA_API_KEY && !env.DVSA_API_KEY)) return row;
+  // Also catch cars looked up before the MOT history key existed (no DVSA answer yet), at most once a day.
+  const missingDvsa = !!env.DVSA_API_KEY && !row.dvsa_json && (!row.looked_up_at || Date.parse(row.looked_up_at) < Date.now() - 864e5);
+  if (!isStale(row.looked_up_at) && !missingDvsa) return row;
   const full = await safeLookup(env, row.reg);
   if (full) {
     try { await applyLookup(env, row.id, full); }

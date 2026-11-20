@@ -158,5 +158,7 @@ describe("engine label", () => {
     expect(engineLabel("Toyota", 1798, "Hybrid Electric")).toBe("1.8 hybrid");
     expect(engineLabel("Tesla", 0, "Electricity")).toBe("Electric");
     expect(engineLabel(null, null, null)).toBeNull();
+    expect(engineLabel("Audi", 1968, "Diesel", "A4 SE TDI")).toBe("2.0");
+    expect(engineLabel("Audi", 1968, "Diesel", "A4 SE")).toBe("2.0 TDI");
   });
 });
