@@ -182,7 +182,7 @@ export async function renderDocumentPdf(doc: PdfDoc, b: Business): Promise<Uint8
     }
     for (const l of doc.lines.filter(x => x.kind === kind)) {
       const descLines = wrap(l.description, f.bold, 9, COLS.qty - COLS.desc - 60);
-      const rowH = 11 * descLines.length + 9;
+      const rowH = 11 * descLines.length + 6;
       if (y - rowH < 110) y = newPage();
       descLines.forEach((d, i) => page.drawText(d, { x: COLS.desc, y: y - 11 * i, size: 9, font: f.bold, color: INK }));
       spaced(page, qtyLabel(l.qty, l.unit), COLS.qty, y, 9, f.reg, INK, 0, "right");
@@ -190,16 +190,16 @@ export async function renderDocumentPdf(doc: PdfDoc, b: Business): Promise<Uint8
       spaced(page, gbp(lineTotal(l)), COLS.amount, y, 9, f.reg, INK, 0, "right");
       y -= rowH;
       page.drawLine({ start: { x: M, y: y + 6 }, end: { x: W - M, y: y + 6 }, thickness: 0.4, color: LINE });
-      y -= 6;
+      y -= 4;
     }
-    y -= 8;
+    y -= 6;
   }
 
   // ---- totals and how to pay ----
   const t = totals(doc.lines, doc.paid_pence);
   const notesLines = doc.notes ? wrap(doc.notes, f.reg, 8.5, W - 2 * M) : [];
-  const blockH = 150 + (notesLines.length ? 22 + notesLines.length * 12 : 0);
-  if (y - blockH < 80) { page = pdf.addPage([W, H]); header(page, f, doc); y = H - 156; }
+  const blockH = 132 + (notesLines.length ? 22 + notesLines.length * 12 : 0);
+  if (y - blockH < 64) { page = pdf.addPage([W, H]); header(page, f, doc); y = H - 156; }
 
   const tx = 330;
   let ty = y - 4;
