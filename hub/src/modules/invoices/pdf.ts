@@ -198,8 +198,8 @@ export async function renderDocumentPdf(doc: PdfDoc, b: Business): Promise<Uint8
   // ---- totals and how to pay ----
   const t = totals(doc.lines, doc.paid_pence);
   const notesLines = doc.notes ? wrap(doc.notes, f.reg, 8.5, W - 2 * M) : [];
-  const blockH = 132 + (notesLines.length ? 22 + notesLines.length * 12 : 0);
-  if (y - blockH < 64) { page = pdf.addPage([W, H]); header(page, f, doc); y = H - 156; }
+  const blockH = 108 + (notesLines.length ? 22 + notesLines.length * 12 : 0);
+  if (y - blockH < 60) { page = pdf.addPage([W, H]); header(page, f, doc); y = H - 156; }
 
   const tx = 330;
   let ty = y - 4;
@@ -220,23 +220,23 @@ export async function renderDocumentPdf(doc: PdfDoc, b: Business): Promise<Uint8
   } else row("Quote total", gbp(t.total), 15, f.bold);
 
   // How to pay (invoices) or how to accept (quotes), in a soft box on the left.
-  const bx = M, bw = 262, bh = isInvoice && t.balance > 0 ? 122 : 70, btop = y + 2;
+  const bx = M, bw = 262, bh = isInvoice && t.balance > 0 ? 104 : 64, btop = y + 2;
   page.drawRectangle({ x: bx, y: btop - bh, width: bw, height: bh, borderColor: LINE, borderWidth: 0.8, color: rgb(0.985, 0.988, 0.99) });
-  let py = btop - 18;
+  let py = btop - 15;
   label(page, f, isInvoice ? "How to pay" : "How to accept", bx + 14, py);
-  py -= 16;
+  py -= 14;
   const intro = isInvoice
     ? t.balance <= 0 ? "Nothing more to pay. Thank you." : `Balance of ${gbp(t.balance)} ${doc.due_date ? `due by ${longDate(doc.due_date)}` : "due on receipt"}. Please pay by bank transfer, quoting ${doc.number} as the reference.`
     : `Reply to our email or call ${b.phone} to book. Prices are held until ${doc.due_date ? longDate(doc.due_date) : "30 days from the date above"}.`;
   for (const l of wrap(intro, f.reg, 8.5, bw - 28)) { page.drawText(l, { x: bx + 14, y: py, size: 8.5, font: f.reg, color: INK }); py -= 12; }
   if (isInvoice && t.balance > 0) {
-    py -= 6;
+    py -= 2;
     if (b.bank) {
       label(page, f, "Account name", bx + 14, py);
       page.drawText(pdfSafe(b.bank.name), { x: bx + 14, y: py - 11, size: 8.5, font: f.mono, color: INK });
       const cells: [string, string][] = [["Sort code", b.bank.sortCode], ["Account no.", b.bank.account], ["Reference", doc.number]];
       cells.forEach(([k, v], i) => {
-        const cx = bx + 14 + i * 80, cy = py - 28;
+        const cx = bx + 14 + i * 80, cy = py - 25;
         label(page, f, k, cx, cy);
         page.drawText(pdfSafe(v), { x: cx, y: cy - 11, size: 8.5, font: f.mono, color: INK });
       });
